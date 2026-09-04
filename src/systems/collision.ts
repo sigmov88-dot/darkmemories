@@ -20,6 +20,11 @@ export interface CircleCollider {
 
 export type Collider = BoxCollider | CircleCollider;
 
+export interface ResolveOut {
+  x: number;
+  z: number;
+}
+
 export class CollisionWorld {
   boxes: BoxCollider[] = [];
   circles: CircleCollider[] = [];
@@ -46,9 +51,12 @@ export class CollisionWorld {
 
   /**
    * Вытолкнуть круг (px,pz,r) из всех коллайдеров.
-   * Возвращает исправленную позицию. Вызывать 2 итерации для углов.
+   * Результат пишется в out — ноль аллокаций в кадре.
+   * Вызывать 2 итерации для углов (внутри).
    */
-  resolve(px: number, pz: number, r: number): { x: number; z: number } {
+  resolve(px: number, pz: number, r: number, out: ResolveOut): ResolveOut {
+    out.x = px;
+    out.z = pz;
     let x = px;
     let z = pz;
     for (let iter = 0; iter < 2; iter++) {
@@ -89,6 +97,8 @@ export class CollisionWorld {
         }
       }
     }
-    return { x, z };
+    out.x = x;
+    out.z = z;
+    return out;
   }
 }

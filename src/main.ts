@@ -81,9 +81,11 @@ const clock = new THREE.Clock();
 const staminaFill = document.getElementById('stamina-fill');
 const hpEl = document.getElementById('hp');
 const dmgEl = document.getElementById('dmg');
+const drawsEl = document.getElementById('draws');
 const attackDir = new THREE.Vector3();
 let dmgFlash = 0;
 let dead = false;
+let drawTimer = 0;
 
 document.getElementById('respawn')?.addEventListener('click', () => {
   dead = false;
@@ -140,6 +142,16 @@ function animate(): void {
   }
 
   post.composer.render();
+
+  // замер из гайдов: draw calls + треугольники + программы, раз в полсекунды
+  drawTimer += dt;
+  if (drawsEl && drawTimer > 0.5) {
+    drawTimer = 0;
+    const info = engine.renderer.info;
+    drawsEl.textContent =
+      `${info.render.calls} calls · ${(info.render.triangles / 1000).toFixed(0)}k tris · ${info.programs?.length ?? 0} prog`;
+  }
+
   fps.update(dt, engine.camera.position.x, engine.camera.position.z);
 }
 

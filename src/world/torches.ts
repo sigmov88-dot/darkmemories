@@ -44,25 +44,27 @@ function makeStandingTorch(
 /**
  * Факелы-вехи вдоль всего маршрута: деревня → поля → врата →
  * середина → мост → ворота замка → двор. Ведут игрока без маркеров.
+ * Яркость разная: ключевые (мост, ворота, площадь) — ярче,
+ * второстепенные — приглушены, чтобы свет оставался «жемчужиной».
  */
 export function createTorches(scene: THREE.Scene): TorchRig {
-  const spots: Array<[number, number]> = [
-    [2.5, 23.5], // площадь деревни
-    [-1.9, 16.5], // поля
-    [-2.9, 9.3], // врата запад
-    [2.9, 9.3], // врата восток
-    [1.9, -4.5], // середина
-    [-2.2, -7.4], // мост юг
-    [2.2, -14.8], // мост север / ворота замка
-    [-3.5, -18] // двор замка
+  const spots: Array<[number, number, number]> = [
+    [2.5, 23.5, 12], // площадь деревни — ярко
+    [-1.9, 16.5, 8], // поля — приглушен
+    [-2.9, 9.3, 9], // врата запад
+    [2.9, 9.3, 9], // врата восток
+    [1.9, -4.5, 8], // середина — приглушен
+    [-2.2, -7.4, 13], // мост юг — ярко
+    [2.2, -14.8, 12], // мост север / ворота замка — ярко
+    [-3.5, -18, 10] // двор замка
   ];
-  const list = spots.map(([x, z]) => makeStandingTorch(scene, x, z));
+  const list = spots.map(([x, z, base]) => ({ ...makeStandingTorch(scene, x, z, base), base }));
   return {
     update: (t: number) => {
       const step = Math.floor(t * 8);
       list.forEach((f, i) => {
         const n = Math.sin(step * 1.7 + i * 2.4) * 0.5 + Math.sin(step * 0.6 + i) * 0.5;
-        f.light.intensity = 11 + n * 2.0;
+        f.light.intensity = f.base + n * 2.0;
         f.flame.scale.set(0.55 + n * 0.03, 0.75 - n * 0.04, 1);
         f.flame.position.x = n * 0.03;
       });

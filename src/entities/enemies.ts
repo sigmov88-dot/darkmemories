@@ -1,6 +1,9 @@
 import * as THREE from 'three';
-import { CollisionWorld } from '../systems/collision';
+import { CollisionWorld, ResolveOut } from '../systems/collision';
 import { getGroundHeight } from '../world/ground';
+
+// общий буфер для коллизий — ноль аллокаций в кадре
+const resolveOut: ResolveOut = { x: 0, z: 0 };
 
 export interface PlayerAttack {
   active: boolean;
@@ -142,9 +145,9 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
               // нокбэк от игрока
               const nx = e.pos.x + (ax / Math.max(ad, 0.001)) * 0.9;
               const nz = e.pos.z + (az / Math.max(ad, 0.001)) * 0.9;
-              const fixed = collision.resolve(nx, nz, ENEMY_R);
-              e.pos.x = fixed.x;
-              e.pos.z = fixed.z;
+              collision.resolve(nx, nz, ENEMY_R, resolveOut);
+              e.pos.x = resolveOut.x;
+              e.pos.z = resolveOut.z;
               if (e.hp <= 0) {
                 e.state = 'dead';
                 e.deathT = 0;
@@ -180,9 +183,9 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
             // погоня
             const nx = e.pos.x + (dx / dist) * CHASE_SPEED * dt;
             const nz = e.pos.z + (dz / dist) * CHASE_SPEED * dt;
-            const fixed = collision.resolve(nx, nz, ENEMY_R);
-            e.pos.x = fixed.x;
-            e.pos.z = fixed.z;
+            collision.resolve(nx, nz, ENEMY_R, resolveOut);
+            e.pos.x = resolveOut.x;
+            e.pos.z = resolveOut.z;
           } else if (e.attackCd <= 0) {
             // удар по игроку
             hitsOnPlayer++;
@@ -197,9 +200,9 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
           if (hd > 0.5) {
             const nx = e.pos.x + (hx / hd) * 1.2 * dt;
             const nz = e.pos.z + (hz / hd) * 1.2 * dt;
-            const fixed = collision.resolve(nx, nz, ENEMY_R);
-            e.pos.x = fixed.x;
-            e.pos.z = fixed.z;
+            collision.resolve(nx, nz, ENEMY_R, resolveOut);
+            e.pos.x = resolveOut.x;
+            e.pos.z = resolveOut.z;
           }
           e.group.rotation.y = Math.sin(t * 0.5 + e.bobPhase) * 0.8;
         }

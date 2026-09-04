@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { Input } from '../core/input';
-import { CollisionWorld } from '../systems/collision';
+import { CollisionWorld, ResolveOut } from '../systems/collision';
 import { getGroundHeight } from '../world/ground';
 import { makePixelFlame } from '../world/pixel';
 
@@ -32,6 +32,7 @@ export class Player {
   private attackCd = 0;
   private swingT = 0;
   private swingId = 0;
+  private resolveOut: ResolveOut = { x: 0, z: 0 };
   private static readonly SWING_LEN = 0.28;
 
   stamina01(): number {
@@ -212,10 +213,10 @@ export class Player {
     // край мира
     p.x = Math.max(-46, Math.min(46, p.x));
     p.z = Math.max(-36, Math.min(42, p.z));
-    // коллизии
-    const fixed = this.collision.resolve(p.x, p.z, RADIUS);
-    p.x = fixed.x;
-    p.z = fixed.z;
+    // коллизии (без аллокаций)
+    this.collision.resolve(p.x, p.z, RADIUS, this.resolveOut);
+    p.x = this.resolveOut.x;
+    p.z = this.resolveOut.z;
 
     // --- Вертикаль: прыжок + гравитация ---
     const ground = getGroundHeight(p.x, p.z);
