@@ -19,15 +19,17 @@ export function createRiver(scene: THREE.Scene, collision: CollisionWorld): Rive
     opacity: 0.92
   });
 
-  // Лента воды из сегментов 2м — повторяет изгиб русла
-  const SEG = 40;
-  const HALF = 40;
-  const waterGeo = new THREE.PlaneGeometry((HALF * 2) / SEG, 7.6, 1, 4);
+  // Лента воды из сегментов 2м — повторяет изгиб русла.
+  // Запад — до края карты (река уходит за мир), восток — до конца русла (x=42).
+  const SEG = 56;
+  const X0 = -70;
+  const X1 = 42;
+  const waterGeo = new THREE.PlaneGeometry((X1 - X0) / SEG, 7.6, 1, 4);
   waterGeo.rotateX(-Math.PI / 2);
   const water = new THREE.InstancedMesh(waterGeo, waterMat, SEG);
   const dummy = new THREE.Object3D();
   for (let i = 0; i < SEG; i++) {
-    const x = -HALF + (i + 0.5) * ((HALF * 2) / SEG);
+    const x = X0 + (i + 0.5) * ((X1 - X0) / SEG);
     dummy.position.set(x, -0.55, riverZAt(x));
     dummy.rotation.y = Math.atan2(
       riverZAt(x + 1) - riverZAt(x - 1),
@@ -42,11 +44,11 @@ export function createRiver(scene: THREE.Scene, collision: CollisionWorld): Rive
   // Песчаные берега — две ленты по краям русла
   const sandMat = new THREE.MeshLambertMaterial({ map: makePixelSand() });
   for (const side of [-1, 1]) {
-    const bankGeo = new THREE.PlaneGeometry((HALF * 2) / SEG, 1.6, 1, 1);
+    const bankGeo = new THREE.PlaneGeometry((X1 - X0) / SEG, 1.6, 1, 1);
     bankGeo.rotateX(-Math.PI / 2);
     const bank = new THREE.InstancedMesh(bankGeo, sandMat, SEG);
     for (let i = 0; i < SEG; i++) {
-      const x = -HALF + (i + 0.5) * ((HALF * 2) / SEG);
+      const x = X0 + (i + 0.5) * ((X1 - X0) / SEG);
       const rz = riverZAt(x);
       dummy.position.set(x, getGroundHeight(x, rz + side * 3.6) + 0.05, rz + side * 3.6);
       dummy.rotation.set(0, 0, 0);
@@ -101,9 +103,9 @@ export function createRiver(scene: THREE.Scene, collision: CollisionWorld): Rive
     }
   }
 
-  // --- Коллизии реки: цепочка блоков вдоль русла, разрыв только под мост ---
-  // Южный и северный край воды — стена, чтобы нельзя было войти вглубь/срезать
-  for (let x = -40; x <= 40; x += 2) {
+  // --- Коллизии реки: цепочка блоков вдоль всего русла, разрыв только под мост ---
+  // Запад — до края карты, восток — до конца воды (x=44). Обход конца легален.
+  for (let x = -70; x <= 44; x += 2) {
     if (Math.abs(x) < 2.4) continue; // проем моста
     const rz = riverZAt(x);
     collision.addBox(x, rz + 2.6, 2.2, 1.2); // южный край

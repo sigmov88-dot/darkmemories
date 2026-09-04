@@ -37,15 +37,17 @@ export function createCrags(scene: THREE.Scene, collision: CollisionWorld): Crag
     dummy.scale.set(s, s * 0.8, s);
     dummy.updateMatrix();
     rocks.setMatrixAt(i, dummy.matrix);
-    if (cragPathInfo(x, z).d < 5) collision.addCircle(x, z, 1.3 * s);
+    // все глыбы твердые (чуть меньше визуала — прощающий хитбокс)
+    collision.addCircle(x, z, 1.1 * s);
   });
   rocks.count = spots.length;
   rocks.instanceMatrix.needsUpdate = true;
   scene.add(rocks);
 
-  // Западный обрыв: стена с проемом под тропу
+  // Западный склон: стена там, где начинаются камни и подъем,
+  // а не на плоской земле (была невидимая стена за 3м до препятствия)
   for (let z = -32; z <= 24; z += 2) {
-    const lx = ridgeXAt(z) - 3.5;
+    const lx = ridgeXAt(z) + 1.0;
     if (cragPathInfo(lx, z).d < 4.5) continue; // проем серпантина
     collision.addBox(lx, z, 3.0, 2.4);
   }

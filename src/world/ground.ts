@@ -74,19 +74,21 @@ function smooth01(x: number): number {
 
 /** Высота земли — ЕДИНСТВЕННЫЙ источник правды (меш + физика игрока) */
 export function getGroundHeight(x: number, z: number): number {
-  // Дамба через озеро
-  if (Math.abs(z - CAUSEWAY.z) < 1.7 && x < CAUSEWAY.x1 && x > CAUSEWAY.x0) return 0.3;
-  // Мост через реку
-  if (Math.abs(x) < 1.7 && z < -7.5 && z > -14.5) return 0.28;
+  // Дамба через озеро (верх досок)
+  if (Math.abs(z - CAUSEWAY.z) < 1.7 && x < CAUSEWAY.x1 && x > CAUSEWAY.x0) return 0.35;
+  // Мост через реку (верх досок)
+  if (Math.abs(x) < 1.7 && z < -7.5 && z > -14.5) return 0.35;
 
   let h = 0;
 
-  // Русло реки
+  // Русло реки. На востоке сходит на нет к |x|=44 — дальше сухая земля,
+  // а не каньон без воды: обход конца реки легален, брод — нет.
   const rz = riverZAt(x);
   const dRiver = Math.abs(z - rz);
   if (dRiver < 3.4) {
     const k = Math.cos((dRiver / 3.4) * (Math.PI / 2));
-    h -= 1.35 * k * k;
+    const taper = 1 - smooth01((Math.abs(x) - 36) / 8);
+    h -= 1.35 * k * k * taper;
   }
 
   // Озерная котловина (не действует на островной купол)

@@ -5,31 +5,40 @@ import { getGroundHeight } from '../world/ground';
 import { createVillage } from '../world/village';
 import { createRuins } from '../world/ruins';
 import { createRiver } from '../world/river';
+import { createLake } from '../world/lake';
+import { createCrags } from '../world/crags';
 import { createCastle } from '../world/castle';
 import { createTorches } from '../world/torches';
 import { createDeadForest } from '../world/forest';
+import { createSatellites } from '../world/satellites';
 import { SHARD_SPOTS, ALTAR_POS, PORTAL_POS, SHARD_TAKE_R } from './quest';
 
 /**
- * Тест проходимости из вердикта: от спавна должны быть доступны
- * все 5 осколков (радиус взятия), зона алтаря и триггер портала.
- * BFS по сетке 0.5м с теми же коллайдерами и радиусом игрока 0.42.
+ * Тест проходимости: ПОЛНЫЙ мир (все строители с коллайдерами).
+ * Позитивные проверки: цели доступны. Негативные: глубь озера,
+ * стремнина реки и обрывы — НЕ достижимы (барьеры целы).
+ * BFS по сетке 0.5м с радиусом игрока 0.42.
+ * Упрощение: «глубина < −0.8 = нельзя» — проектное намерение
+ * (глубокая вода вне игры), в движке глубины нет.
  */
 describe('reachability', () => {
   it(
-    'все цели доступны от спавна (0, 26)',
+    'все цели доступны, барьеры целы',
     () => {
       const scene = new THREE.Scene();
       const collision = new CollisionWorld();
       createVillage(scene, collision);
       createRuins(scene, collision);
       createRiver(scene, collision);
+      createLake(scene, collision);
+      createCrags(scene, collision);
       createCastle(scene, collision);
       createTorches(scene, collision);
       createDeadForest(scene, collision);
+      createSatellites(scene, collision);
 
       const STEP = 0.5;
-      const MIN_X = -46;
+      const MIN_X = -64;
       const MAX_X = 46;
       const MIN_Z = -36;
       const MAX_Z = 42;
@@ -109,14 +118,22 @@ describe('reachability', () => {
         PORTAL_POS.triggerR - 0.1
       );
       // M1: новые земли тоже доступны — середина дамбы и смотровая
+      // (у костра радиус 1.1+0.42, встать можно вплотную: порог 1.6)
       expect(nearestVisitedDist(-33, -4)).toBeLessThan(1.0);
-      expect(nearestVisitedDist(38, -8)).toBeLessThan(1.5);
+      expect(nearestVisitedDist(38, -8)).toBeLessThan(1.6);
       // M2: остров (пьедестал под ключ) достижим вброд от дамбы
       expect(nearestVisitedDist(-44.5, -3)).toBeLessThan(1.0);
       // Спутники: ферма, осадный лагерь, сторожевая башня
       expect(nearestVisitedDist(10, 38)).toBeLessThan(1.5);
       expect(nearestVisitedDist(0, -36)).toBeLessThan(1.5);
       expect(nearestVisitedDist(44.5, -12)).toBeLessThan(1.5);
+      // Мост — единственный путь через реку в окне карты
+      expect(nearestVisitedDist(0, -11)).toBeLessThan(0.8);
+      // Негативы: глубь озера, стремнина и конец русла — вне доступа
+      // (центр озера — склон острова, поэтому проба в настоящей глуби на западе)
+      expect(nearestVisitedDist(-58, -2)).toBeGreaterThan(5);
+      expect(nearestVisitedDist(30, -11.5)).toBeGreaterThan(1.2);
+      expect(nearestVisitedDist(-20, -11)).toBeGreaterThan(1.2);
     },
     60000
   );

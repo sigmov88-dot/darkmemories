@@ -198,21 +198,22 @@ export function createCastle(scene: THREE.Scene, collision: CollisionWorld): voi
     collision.addCircle(sx, -26.0, 0.55);
   }
 
-  // Балкон на южном фасаде + лестница вдоль восточной стены двора
+  // Балкон на южном фасаде + лестница вдоль восточной стены двора.
+  // Первая ступень +0.35 (влезает в лимит шага 0.6), дальше по +0.35.
   const stairX = 4.8;
-  const stairTop0 = getGroundHeight(stairX, -15.5) + 0.35;
+  const stairBase = getGroundHeight(stairX, -15.5);
   const NSTEPS = 9;
   const RISE = 0.35;
   for (let i = 0; i < NSTEPS; i++) {
     const sz = -15.95 - i * 0.89;
-    const top = stairTop0 + RISE * (i + 1);
+    const top = stairBase + RISE * (i + 1);
     const step = new THREE.Mesh(pixelBox(1.2, 0.18, 0.95), stoneMat);
     step.position.set(stairX, top - 0.09, sz);
     step.castShadow = step.receiveShadow = true;
     g.add(step);
     collision.addStep(stairX, sz, 1.2, 0.95, top);
   }
-  const slabTop = stairTop0 + RISE * NSTEPS;
+  const slabTop = stairBase + RISE * NSTEPS;
   const slab = new THREE.Mesh(pixelBox(9.9, 0.3, 1.8), stoneMat);
   slab.position.set(0.45, slabTop - 0.15, -24.1);
   slab.castShadow = slab.receiveShadow = true;
