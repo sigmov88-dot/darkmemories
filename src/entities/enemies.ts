@@ -67,7 +67,6 @@ export interface EnemyRig {
   /** Возвращает число ударов, попавших по игроку в этом кадре */
   update: (dt: number, t: number, playerPos: THREE.Vector3, attack: PlayerAttack | null, locked: boolean) => number;
   reset: () => void;
-  aliveCount: () => number;
 }
 
 /**
@@ -219,7 +218,8 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
         );
       }
 
-      // расталкивание друг от друга
+      // расталкивание друг от друга + повторная проверка стен,
+      // чтобы separation не затолкал врага в архитектуру
       for (let i = 0; i < list.length; i++) {
         for (let j = i + 1; j < list.length; j++) {
           const a = list[i];
@@ -236,6 +236,12 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
             b.pos.z += (dz / d) * push;
           }
         }
+      }
+      for (const e of list) {
+        if (!e.active || e.state === 'dead') continue;
+        collision.resolve(e.pos.x, e.pos.z, ENEMY_R, resolveOut);
+        e.pos.x = resolveOut.x;
+        e.pos.z = resolveOut.z;
       }
 
       return hitsOnPlayer;
@@ -255,8 +261,6 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
         e.group.scale.setScalar(1);
         e.group.position.copy(e.home);
       }
-    },
-
-    aliveCount: () => list.filter((e) => e.active).length
+    }
   };
 }

@@ -89,13 +89,20 @@ export function createGround(scene: THREE.Scene): void {
   inst.receiveShadow = true;
   scene.add(inst);
 
-  // --- Площади: деревня + замок ---
+  // --- Площади повторяют рельеф (иначе края тонут/висят на склоне) ---
   const plazaMat = new THREE.MeshLambertMaterial({ color: 0x33363f });
   const mkPlaza = (x: number, z: number, r: number): void => {
-    const g = new THREE.CircleGeometry(r, 18);
+    const g = new THREE.CircleGeometry(r, 24);
     g.rotateX(-Math.PI / 2);
+    const pos = g.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      const wx = x + pos.getX(i);
+      const wz = z + pos.getZ(i);
+      pos.setY(i, getGroundHeight(wx, wz) + 0.04 - getGroundHeight(x, z));
+    }
+    g.computeVertexNormals();
     const m = new THREE.Mesh(g, plazaMat);
-    m.position.set(x, getGroundHeight(x, z) + 0.04, z);
+    m.position.set(x, getGroundHeight(x, z), z);
     m.receiveShadow = true;
     scene.add(m);
   };

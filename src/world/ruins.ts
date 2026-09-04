@@ -157,6 +157,7 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
   for (const [rx, rz, s] of rubbleSpots) {
     const rgy = getGroundHeight(rx, rz);
     block(g, s, s * 0.6, s, rx, rgy + s * 0.25, rz, rx * 1.7, (rx + rz) % 2 === 0);
+    collision.addCircle(rx, rz, s * 0.55);
   }
 
   // --- Алтарь во дворе замка ---
@@ -186,14 +187,14 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
   // иначе запретная зона перекрывает проход от моста к осколку и порталу.
   collision.addCircle(0, -18, 1.1);
 
-  // --- Портал-врата ---
+  // --- Портал-врата: до ритуала видна только темная арка ---
   const pgy = getGroundHeight(0, -21.5);
-  const portalMat = new THREE.MeshBasicMaterial({ color: 0x8fb8ff, fog: false });
+  const portalMat = new THREE.MeshBasicMaterial({ color: 0x0a0d16, fog: false });
   const portal = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.8), portalMat);
   portal.position.set(0, pgy + 2.4, -21.5);
   g.add(portal);
   const glowMat = new THREE.MeshBasicMaterial({
-    color: 0x2a4a9a, transparent: true, opacity: 0.35,
+    color: 0x2a4a9a, transparent: true, opacity: 0.06,
     blending: THREE.AdditiveBlending, depthWrite: false, fog: false
   });
   const glow = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 6.0), glowMat);

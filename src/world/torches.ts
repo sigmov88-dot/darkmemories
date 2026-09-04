@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CollisionWorld } from '../systems/collision';
 import { makePixelFlame } from './pixel';
 import { getGroundHeight } from './ground';
 
@@ -47,7 +48,7 @@ function makeStandingTorch(
  * Яркость разная: ключевые (мост, ворота, площадь) — ярче,
  * второстепенные — приглушены, чтобы свет оставался «жемчужиной».
  */
-export function createTorches(scene: THREE.Scene): TorchRig {
+export function createTorches(scene: THREE.Scene, collision: CollisionWorld): TorchRig {
   const spots: Array<[number, number, number]> = [
     [2.5, 23.5, 12], // площадь деревни — ярко
     [-1.9, 16.5, 8], // поля — приглушен
@@ -59,6 +60,8 @@ export function createTorches(scene: THREE.Scene): TorchRig {
     [-3.5, -18, 10] // двор замка
   ];
   const list = spots.map(([x, z, base]) => ({ ...makeStandingTorch(scene, x, z, base), base }));
+  // шест тонкий, но проходить сквозь пламя некрасиво — маленькие круги
+  for (const [x, z] of spots) collision.addCircle(x, z, 0.28);
   return {
     update: (t: number) => {
       const step = Math.floor(t * 8);

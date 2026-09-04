@@ -154,10 +154,6 @@ export function createVillage(scene: THREE.Scene, collision: CollisionWorld): vo
   bed.position.y = 0.75;
   bed.castShadow = true;
   cart.add(bed);
-  for (const [sx, sz] of [[-0.8, 0.7], [0.8, 0.7], [-0.8, -0.7], [0.8, -0.7]]) {
-    void sx;
-    void sz;
-  }
   for (const sz of [-0.7, 0.7]) {
     for (const sx of [-0.85, 0.85]) {
       const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.12, 10), darkWood);

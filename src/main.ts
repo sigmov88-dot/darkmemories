@@ -30,7 +30,6 @@ engine.init();
 
 // Порядок важен: сначала коллизии, потом все строители регистрируют в них твердые тела
 const collision = new CollisionWorld();
-engine.renderer.compile(engine.scene, engine.camera);
 
 const input = new Input();
 input.init();
@@ -41,10 +40,13 @@ createVillage(engine.scene, collision);
 const ruins = createRuins(engine.scene, collision);
 const river = createRiver(engine.scene, collision);
 createCastle(engine.scene, collision);
-const torches = createTorches(engine.scene);
+const torches = createTorches(engine.scene, collision);
 createDeadForest(engine.scene, collision);
 createProps(engine.scene);
 const fog = createGroundFog(engine.scene);
+
+// Прогрев шейдеров ПОСЛЕ создания мира, иначе греется пустая сцена
+engine.renderer.compile(engine.scene, engine.camera);
 
 let pixelSize = 4;
 const post = createPost(engine.renderer, engine.scene, engine.camera, pixelSize);

@@ -90,10 +90,16 @@ export class CollisionWorld {
         const dz = z - c.z;
         const rr = r + c.r;
         const d2 = dx * dx + dz * dz;
-        if (d2 < rr * rr && d2 > 1e-8) {
-          const d = Math.sqrt(d2);
-          x = c.x + (dx / d) * rr;
-          z = c.z + (dz / d) * rr;
+        if (d2 < rr * rr) {
+          if (d2 > 1e-8) {
+            const d = Math.sqrt(d2);
+            x = c.x + (dx / d) * rr;
+            z = c.z + (dz / d) * rr;
+          } else {
+            // точное попадание в центр — выталкиваем на +X детерминированно
+            x = c.x + rr;
+            z = c.z;
+          }
         }
       }
     }

@@ -184,11 +184,6 @@ export function makePixelGrave(): THREE.CanvasTexture {
 export function makePixelFlame(): THREE.CanvasTexture {
   const [c, ctx] = cv(16);
   ctx.clearRect(0, 0, 16, 16);
-  const draw = (dx: number, ch: string[][]): void => {
-    void dx;
-    void ch;
-  };
-  void draw;
   // ядро
   ctx.fillStyle = '#ffedb0';
   ctx.fillRect(7, 10, 2, 4);

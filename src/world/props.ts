@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { riverZAt } from './ground';
+import { getGroundHeight, riverZAt } from './ground';
 import { makePixelGrass } from './pixel';
 
 /** Детали: трава, камыш у реки, светогрибы. Все — пиксель-билборды. */
@@ -31,7 +31,7 @@ export function createProps(scene: THREE.Scene): void {
   let idx = 0;
   spots.forEach(([x, z], i) => {
     for (let k = 0; k < 2; k++) {
-      dummy.position.set(x, 0.22, z);
+      dummy.position.set(x, getGroundHeight(x, z) + 0.22, z);
       dummy.rotation.y = (i % 4) * 0.78 + (k * Math.PI) / 2;
       const s = 0.7 + ((i + k) % 5) / 6;
       dummy.scale.set(s, s, s);
@@ -58,7 +58,7 @@ export function createProps(scene: THREE.Scene): void {
   let ri = 0;
   reeds.forEach(([x, z], i) => {
     for (let k = 0; k < 2; k++) {
-      dummy.position.set(x, 0.35, z);
+      dummy.position.set(x, getGroundHeight(x, z) + 0.35, z);
       dummy.rotation.y = (i % 3) + (k * Math.PI) / 2;
       dummy.scale.setScalar(1.2);
       dummy.updateMatrix();
@@ -79,7 +79,7 @@ export function createProps(scene: THREE.Scene): void {
     const side = i % 2 === 0 ? -1 : 1;
     const x = side * (12 + ((i * 53) % 14));
     const z = 6 - ((i * 31) % 26);
-    dummy.position.set(x, 0.08, z);
+    dummy.position.set(x, getGroundHeight(x, z) + 0.08, z);
     dummy.rotation.set(0, i, 0);
     dummy.scale.setScalar(0.6 + (i % 4) / 4);
     dummy.updateMatrix();
