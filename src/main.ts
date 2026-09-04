@@ -20,6 +20,7 @@ import { createProps } from './world/props';
 import { createQuest } from './systems/quest';
 import { createEnemies, PlayerAttack } from './entities/enemies';
 import { Player } from './entities/player';
+import { WEAPONS } from './entities/weapons';
 import { FpsMeter } from './systems/fps';
 
 const canvas = document.getElementById('scene') as HTMLCanvasElement;
@@ -96,6 +97,7 @@ const fps = new FpsMeter();
 const clock = new THREE.Clock();
 const staminaFill = document.getElementById('stamina-fill');
 const hpEl = document.getElementById('hp');
+const weaponEl = document.getElementById('weapon');
 const dmgEl = document.getElementById('dmg');
 const drawsEl = document.getElementById('draws');
 const attackDir = new THREE.Vector3();
@@ -126,7 +128,11 @@ function animate(): void {
   let attack: PlayerAttack | null = null;
   if (active && player.attackActive()) {
     player.attackDir(attackDir);
-    attack = { active: true, id: player.attackId(), pos: engine.camera.position, dir: attackDir };
+    const stats = WEAPONS[player.currentWeapon()];
+    attack = {
+      active: true, id: player.attackId(), dmg: stats.dmg, range: stats.range,
+      pos: engine.camera.position, dir: attackDir
+    };
   }
   const hits = enemies.update(dt, t, engine.camera.position, attack, active);
   if (hits > 0 && active) {
@@ -156,6 +162,11 @@ function animate(): void {
   if (hpEl) {
     const hp = Math.max(player.hpNow(), 0);
     hpEl.textContent = '♥'.repeat(hp) + '♡'.repeat(Math.max(player.hpMax() - hp, 0));
+  }
+  if (weaponEl) {
+    const w = player.currentWeapon();
+    weaponEl.textContent = w === 'sword' ? '[1 МЕЧ]' : '[2 ФАКЕЛ]';
+    weaponEl.style.color = w === 'sword' ? '#c8d2e8' : '#ffb84d';
   }
   if (dmgEl) {
     dmgFlash = Math.max(dmgFlash - dt * 2.2, 0);

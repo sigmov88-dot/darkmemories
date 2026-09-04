@@ -126,6 +126,19 @@ body.playing #hud { opacity: 1; }
   text-shadow: 0 2px 3px #000;
 }
 
+#weapon-row {
+  position: absolute;
+  top: 58px;
+  left: 16px;
+}
+
+#weapon {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: #ffb84d;
+  text-shadow: 0 2px 3px #000;
+}
+
 #dmg {
   position: fixed;
   inset: 0;

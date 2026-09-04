@@ -8,6 +8,8 @@ const resolveOut: ResolveOut = { x: 0, z: 0 };
 export interface PlayerAttack {
   active: boolean;
   id: number;
+  dmg: number;
+  range: number;
   pos: THREE.Vector3;
   dir: THREE.Vector3;
 }
@@ -130,16 +132,16 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
         const dz = pp.z - e.pos.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
 
-        // --- удар игрока факелом (одно попадание на замах) ---
+        // --- удар игрока (одно попадание на замах) ---
         if (attack?.active && e.lastHitId !== attack.id) {
           const ax = e.pos.x - attack.pos.x;
           const az = e.pos.z - attack.pos.z;
           const ad = Math.sqrt(ax * ax + az * az);
-          if (ad < 2.4) {
+          if (ad < attack.range) {
             const dot = (ax * attack.dir.x + az * attack.dir.z) / Math.max(ad, 0.001);
             if (dot > 0.45) {
               e.lastHitId = attack.id;
-              e.hp--;
+              e.hp -= attack.dmg;
               e.flash = 0.12;
               // нокбэк от игрока
               const nx = e.pos.x + (ax / Math.max(ad, 0.001)) * 0.9;

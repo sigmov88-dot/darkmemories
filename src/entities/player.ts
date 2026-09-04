@@ -4,19 +4,23 @@ import { Input } from '../core/input';
 import { CollisionWorld, ResolveOut } from '../systems/collision';
 import { getGroundHeight } from '../world/ground';
 import { makePixelFlame } from '../world/pixel';
+import { WEAPONS, WeaponId, SWING_LEN, SWING_HIT_WINDOW } from './weapons';
 
 const EYE = 1.7;
 const RADIUS = 0.42;
 const GRAVITY = 22;
 const JUMP_SPEED = 7.4;
 
-/** FPS-ходьба с прыжком: WASD + Space + PointerLock + факел в руке */
+/** FPS-ходьба: WASD + Space + PointerLock, в руках факел или меч (1/2) */
 export class Player {
   controls!: PointerLockControls;
   private vel = new THREE.Vector3();
   private handLight!: THREE.PointLight;
-  private handGroup!: THREE.Group;
+  private torchGroup!: THREE.Group;
+  private swordGroup!: THREE.Group;
   private handFlame!: THREE.Sprite;
+  private weapon: WeaponId = 'torch';
+  private lightLevel = WEAPONS.torch.light;
   private bob = 0;
   private locked = false;
   private feetY = 0;
@@ -33,7 +37,14 @@ export class Player {
   private swingT = 0;
   private swingId = 0;
   private resolveOut: ResolveOut = { x: 0, z: 0 };
-  private static readonly SWING_LEN = 0.28;
+
+  currentWeapon(): WeaponId {
+    return this.weapon;
+  }
+
+  weaponLabel(): string {
+    return WEAPONS[this.weapon].label;
+  }
 
   stamina01(): number {
     return this.stamina / 100;
@@ -78,13 +89,15 @@ export class Player {
     this.swingT = 0;
     this.wantJump = false;
     this.bob = 0;
-    this.handGroup.rotation.set(0, 0, 0);
-    this.handGroup.position.set(0.35, -0.3, -0.7);
+    this.torchGroup.rotation.set(0, 0, 0);
+    this.torchGroup.position.set(0.35, -0.3, -0.7);
+    this.swordGroup.rotation.set(-0.15, 0, 0);
+    this.swordGroup.position.set(0.35, -0.34, -0.7);
   }
 
   /** Активен ли удар прямо сейчас (для попадания по врагам) */
   attackActive(): boolean {
-    return this.swingT > Player.SWING_LEN - 0.15;
+    return this.swingT > SWING_LEN - SWING_HIT_WINDOW;
   }
 
   attackId(): number {
@@ -118,13 +131,16 @@ export class Player {
         this.wantJump = true;
         e.preventDefault();
       }
+      // 1 — меч, 2 — факел
+      if (e.code === 'Digit1') this.setWeapon('sword');
+      if (e.code === 'Digit2') this.setWeapon('torch');
     });
-    // ЛКМ — удар факелом (только в игре)
+    // ЛКМ — удар текущим оружием (только в игре)
     window.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || !this.locked) return;
       if (this.attackCd <= 0) {
-        this.attackCd = 0.45;
-        this.swingT = Player.SWING_LEN;
+        this.attackCd = WEAPONS[this.weapon].cooldown;
+        this.swingT = SWING_LEN;
         this.swingId++;
       }
     });
@@ -145,12 +161,12 @@ export class Player {
         opacity: 1.0
       })
     );
-    // Группа руки — качается при взмахе
-    this.handGroup = new THREE.Group();
-    this.handGroup.position.set(0.35, -0.3, -0.7);
+    // Группа факела
+    this.torchGroup = new THREE.Group();
+    this.torchGroup.position.set(0.35, -0.3, -0.7);
     this.handFlame.position.set(0, 0.08, 0);
     this.handFlame.scale.set(0.14, 0.2, 1);
-    this.handGroup.add(this.handFlame);
+    this.torchGroup.add(this.handFlame);
 
     const handle = new THREE.Mesh(
       new THREE.CylinderGeometry(0.015, 0.02, 0.5, 6),
@@ -158,8 +174,42 @@ export class Player {
     );
     handle.position.set(0, -0.12, 0);
     handle.rotation.x = 0.25;
-    this.handGroup.add(handle);
-    this.camera.add(this.handGroup);
+    this.torchGroup.add(handle);
+    this.camera.add(this.torchGroup);
+
+    // Группа меча: клинок + гарда + рукоять + навершие (пиксельные боксы)
+    this.swordGroup = new THREE.Group();
+    this.swordGroup.position.set(0.35, -0.34, -0.7);
+    this.swordGroup.rotation.x = -0.15;
+    const steel = new THREE.MeshLambertMaterial({ color: 0x9aa2b0, emissive: 0x1a1e28 });
+    const ironDark = new THREE.MeshLambertMaterial({ color: 0x3a3f4a });
+    const leather = new THREE.MeshLambertMaterial({ color: 0x4a2f1a });
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.0, 0.025), steel);
+    blade.position.y = 0.68;
+    this.swordGroup.add(blade);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.064, 0.18, 4), steel);
+    tip.position.y = 1.27;
+    tip.rotation.y = Math.PI / 4;
+    this.swordGroup.add(tip);
+    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.07, 0.08), ironDark);
+    guard.position.y = 0.16;
+    this.swordGroup.add(guard);
+    const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.26, 6), leather);
+    grip.position.y = 0.0;
+    this.swordGroup.add(grip);
+    const pommel = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.09), ironDark);
+    pommel.position.y = -0.16;
+    this.swordGroup.add(pommel);
+    this.swordGroup.visible = false;
+    this.camera.add(this.swordGroup);
+  }
+
+  private setWeapon(w: WeaponId): void {
+    if (this.weapon === w) return;
+    this.weapon = w;
+    this.swingT = 0; // смена отменяет замах
+    this.torchGroup.visible = w === 'torch';
+    this.swordGroup.visible = w === 'sword';
   }
 
   lock(): void {
@@ -171,21 +221,35 @@ export class Player {
     if (this.invuln > 0) this.invuln -= dt;
     if (this.attackCd > 0) this.attackCd -= dt;
 
-    // взмах: быстрый выпад руки вперед
+    // свет руки плавно идет к уровню текущего оружия + мерцание
+    const targetLight = WEAPONS[this.weapon].light;
+    this.lightLevel += (targetLight - this.lightLevel) * Math.min(dt * 6, 1);
+
+    // взмахи: факел — колющий выпад вперед, меч — горизонтальная рубка
     let swingBoost = 0;
     if (this.swingT > 0) {
       this.swingT -= dt;
-      const p = 1 - Math.max(this.swingT, 0) / Player.SWING_LEN; // 0→1
+      const p = 1 - Math.max(this.swingT, 0) / SWING_LEN; // 0→1
       const curve = Math.sin(p * Math.PI);
-      this.handGroup.rotation.x = -curve * 1.15;
-      this.handGroup.position.z = -0.7 - curve * 0.28;
+      if (this.weapon === 'torch') {
+        this.torchGroup.rotation.x = -curve * 1.15;
+        this.torchGroup.position.z = -0.7 - curve * 0.28;
+      } else {
+        const e = 1 - Math.pow(1 - p, 2); // easeOut
+        this.swordGroup.rotation.y = 0.85 - 1.8 * e;
+        this.swordGroup.rotation.x = -0.15 - curve * 0.25;
+        this.swordGroup.position.x = 0.35 - curve * 0.15;
+      }
       swingBoost = curve * 7;
     } else {
-      this.handGroup.rotation.x *= 0.8;
-      this.handGroup.position.z += (-0.7 - this.handGroup.position.z) * Math.min(dt * 10, 1);
+      this.torchGroup.rotation.x *= 0.8;
+      this.torchGroup.position.z += (-0.7 - this.torchGroup.position.z) * Math.min(dt * 10, 1);
+      this.swordGroup.rotation.y *= 0.8;
+      this.swordGroup.rotation.x += (-0.15 - this.swordGroup.rotation.x) * Math.min(dt * 10, 1);
+      this.swordGroup.position.x += (0.35 - this.swordGroup.position.x) * Math.min(dt * 10, 1);
     }
 
-    this.handLight.intensity = 9 + n * 1.6 + swingBoost;
+    this.handLight.intensity = this.lightLevel + n * 1.6 + swingBoost;
     this.handFlame.scale.set(0.14 * (1 + n * 0.06), 0.2 * (1 - n * 0.05), 1);
 
     if (!this.locked) {
