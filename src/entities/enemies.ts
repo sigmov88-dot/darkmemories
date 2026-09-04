@@ -148,7 +148,12 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
           const ad = Math.sqrt(ax * ax + az * az);
           if (ad < attack.range) {
             const dot = (ax * attack.dir.x + az * attack.dir.z) / Math.max(ad, 0.001);
-            if (dot > 0.45) {
+            // вертикаль (с балкона вниз не достать) + прямая видимость
+            const vOk = Math.abs(e.pos.y + 1.2 - attack.pos.y) < 2.6;
+            if (
+              dot > 0.45 && vOk &&
+              !collision.segBlocked(attack.pos.x, attack.pos.z, e.pos.x, e.pos.z)
+            ) {
               e.lastHitId = attack.id;
               e.hp -= attack.dmg;
               hits.toEnemy++;
@@ -187,6 +192,16 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
           e.state = 'idle';
         }
 
+        // --- AI: агро только по прямой видимости (в упор — слух) ---
+        if (
+          e.state === 'idle' && dist < AGGRO_R &&
+          (dist < 2.5 || !collision.segBlocked(e.pos.x, e.pos.z, pp.x, pp.z))
+        ) {
+          e.state = 'chase';
+        } else if (e.state === 'chase' && dist > DEAGGRO_R) {
+          e.state = 'idle';
+        }
+
         if (e.state === 'chase') {
           facePlayer(e, pp.x, pp.z);
           e.eyeMat.color.setHex(0xff5a1a);
@@ -201,26 +216,12 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
             // начало замаха: 0.4с телеграфа (наклон + глаза)
             e.attackWindup = 0.4;
           }
-          if (e.attackWindup > 0) {
-            e.attackWindup -= dt;
-            const k = Math.max(e.attackWindup, 0) / 0.4;
-            e.group.rotation.x = -0.3 * k;
-            e.eyeMat.color.setHex(0xffcc00);
-            if (e.attackWindup <= 0) {
-              e.group.rotation.x = 0;
-              // удар: дистанция проверяется заново — можно отпрыгнуть
-              const sx = pp.x - e.pos.x;
-              const sz = pp.z - e.pos.z;
-              if (Math.hypot(sx, sz) < ATTACK_R + 0.35) {
-                hits.toPlayer++;
-                e.attackCd = 1.3;
-              } else {
-                e.attackCd = 0.4; // промах — короткая пауза
-              }
-            }
-          }
         } else {
-          // idle: дрейф у поста, глаза тусклые
+          // idle: сброс незавершенного замаха + дрейф у поста
+          if (e.attackWindup > 0) {
+            e.attackWindup = 0;
+            e.group.rotation.x = 0;
+          }
           e.eyeMat.color.setHex(0x881508);
           const hx = e.home.x - e.pos.x;
           const hz = e.home.z - e.pos.z;
@@ -233,6 +234,32 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
             e.pos.z = resolveOut.z;
           }
           e.group.rotation.y = Math.sin(t * 0.5 + e.bobPhase) * 0.8;
+        }
+
+        // тиканье замаха — независимо от состояния (деагро его сбрасывает выше)
+        if (e.attackWindup > 0) {
+          e.attackWindup -= dt;
+          const k = Math.max(e.attackWindup, 0) / 0.4;
+          e.group.rotation.x = -0.3 * k;
+          e.eyeMat.color.setHex(0xffcc00);
+          if (e.attackWindup <= 0) {
+            e.group.rotation.x = 0;
+            // удар: дистанция + вертикаль + видимость заново — можно отпрыгнуть
+            const sx = pp.x - e.pos.x;
+            const sz = pp.z - e.pos.z;
+            const vDist = Math.abs(e.pos.y - (pp.y - 1.7));
+            if (
+              e.state === 'chase' &&
+              Math.hypot(sx, sz) < ATTACK_R + 0.35 &&
+              vDist < 2.2 &&
+              !collision.segBlocked(e.pos.x, e.pos.z, pp.x, pp.z)
+            ) {
+              hits.toPlayer++;
+              e.attackCd = 1.3;
+            } else {
+              e.attackCd = 0.4; // промах — короткая пауза
+            }
+          }
         }
 
         if (e.attackCd > 0) e.attackCd -= dt;

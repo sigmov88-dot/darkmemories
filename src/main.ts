@@ -38,7 +38,7 @@ const collision = new CollisionWorld();
 const input = new Input();
 input.init();
 
-setupAtmosphere(engine.scene);
+const atmosphere = setupAtmosphere(engine.scene);
 createGround(engine.scene);
 createVillage(engine.scene, collision);
 const ruins = createRuins(engine.scene, collision);
@@ -56,6 +56,7 @@ const fog = createGroundFog(engine.scene);
 engine.renderer.compile(engine.scene, engine.camera);
 
 let pixelSize = 4;
+let manualQuality = false; // ручная настройка [/] главнее авто-режима
 const post = createPost(engine.renderer, engine.scene, engine.camera, pixelSize);
 const applyPixel = (): void => {
   post.setPixelSize(pixelSize);
@@ -69,10 +70,12 @@ window.addEventListener('resize', () => {
 window.addEventListener('keydown', (e) => {
   if (e.code === 'BracketLeft') {
     pixelSize = Math.max(1, pixelSize - 1);
+    manualQuality = true;
     applyPixel();
   }
   if (e.code === 'BracketRight') {
     pixelSize = Math.min(8, pixelSize + 1);
+    manualQuality = true;
     applyPixel();
   }
 });
@@ -137,9 +140,9 @@ function animate(): void {
   const t = clock.elapsedTime;
   const active = state.playing;
 
-  // авто-качество: слайд-шоу дольше 2с — пиксель крупнее (ручная настройка главнее).
-  // Кадры хит-стопа не считаем.
-  if (dt > 0 && hitStop <= 0) {
+  // авто-качество: слайд-шоу дольше 2с — пиксель крупнее, запас — мельче.
+  // Кадры хит-стопа не считаем. Ручной режим авто не трогает.
+  if (dt > 0 && hitStop <= 0 && !manualQuality) {
     fpsAcc += 1 / Math.max(dt, 1e-4);
     fpsCount++;
     fpsWindow += dt;
@@ -148,6 +151,9 @@ function animate(): void {
       if (avg < 45 && pixelSize < 6) {
         pixelSize++;
         applyPixel();
+      } else if (avg > 57 && pixelSize > 3) {
+        pixelSize--;
+        applyPixel();
       }
       fpsWindow = 0;
       fpsAcc = 0;
@@ -155,13 +161,20 @@ function animate(): void {
     }
   }
 
-  ruins.update(t);
-  river.update(t, dt);
-  lake.update(t, dt);
-  crags.update(t);
-  satellites.update(t, dt);
-  torches.update(t);
-  fog.update(t, dt);
+  // мир анимируется в игре и интро; на паузе/смерти/победе — стоп-кадр
+  const simActive = state.phase === 'playing' || state.phase === 'intro';
+  if (simActive) {
+    ruins.update(t);
+    river.update(t, dt);
+    lake.update(t, dt);
+    crags.update(t);
+    satellites.update(t, dt);
+    torches.update(t);
+    fog.update(t, dt);
+  }
+  // тени следуют за игроком: свет и shadow-камера покрывают ±35м вокруг него
+  atmosphere.dirLight.target.position.set(engine.camera.position.x, 0, engine.camera.position.z);
+  atmosphere.dirLight.target.updateMatrixWorld();
   player.update(dt, t);
 
   // бой: удар игрока → враги; враги → игрок
@@ -177,7 +190,8 @@ function animate(): void {
   const hits = enemies.update(dt, t, engine.camera.position, attack, active);
   if (hits.toEnemy > 0) hitStop = 0.06; // хит-стоп: кадр замирает от попадания
   if (hits.toPlayer > 0 && active) {
-    const res = player.damage(1);
+    // стая бьет больнее одиночки: урон за каждого попавшего
+    const res = player.damage(hits.toPlayer);
     if (res === 'dead') {
       state.die();
       syncBody();

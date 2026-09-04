@@ -38,6 +38,8 @@ export function setupAtmosphere(scene: THREE.Scene): Atmosphere {
   dirLight.shadow.camera.bottom = -35;
   dirLight.shadow.bias = -0.002;
   scene.add(dirLight);
+  // якорь тени: main двигает его за игроком, иначе периферия без теней
+  scene.add(dirLight.target);
 
   // Плоский ambient вместо hemisphere — пиксель-стиль любит плоскости.
   // Темно: свет — только луна, факелы и «жемчужины».

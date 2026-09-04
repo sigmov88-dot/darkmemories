@@ -82,6 +82,30 @@ export class CollisionWorld {
   }
 
   /**
+   * Пересекает ли отрезок (ax,az)-(bx,bz) какой-либо коллайдер.
+   * r — зазор (толщина луча). Для проверок видимости атак и агро.
+   */
+  segBlocked(ax: number, az: number, bx: number, bz: number, r = 0.3): boolean {
+    const dx = bx - ax;
+    const dz = bz - az;
+    const len2 = dx * dx + dz * dz;
+    for (const c of this.circles) {
+      let t = len2 > 0 ? ((c.x - ax) * dx + (c.z - az) * dz) / len2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      const px = ax + dx * t - c.x;
+      const pz = az + dz * t - c.z;
+      const rr = c.r + r;
+      if (px * px + pz * pz < rr * rr) return true;
+    }
+    for (const b of this.boxes) {
+      if (segHitsAabb(ax, az, dx, dz, b.minX - r, b.minZ - r, b.maxX + r, b.maxZ + r)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Вытолкнуть круг (px,pz,r) из всех коллайдеров.
    * Результат пишется в out — ноль аллокаций в кадре.
    * Вызывать 2 итерации для углов (внутри).
@@ -139,4 +163,42 @@ export class CollisionWorld {
     out.z = z;
     return out;
   }
+}
+
+/** Пересечение луча (origin + dir, dir не нормирован) с AABB (slab-метод) */
+function segHitsAabb(
+  ox: number, oz: number, dx: number, dz: number,
+  minX: number, minZ: number, maxX: number, maxZ: number
+): boolean {
+  let tmin = 0;
+  let tmax = 1;
+  if (Math.abs(dx) < 1e-9) {
+    if (ox < minX || ox > maxX) return false;
+  } else {
+    let t1 = (minX - ox) / dx;
+    let t2 = (maxX - ox) / dx;
+    if (t1 > t2) {
+      const tt = t1;
+      t1 = t2;
+      t2 = tt;
+    }
+    tmin = Math.max(tmin, t1);
+    tmax = Math.min(tmax, t2);
+    if (tmin > tmax) return false;
+  }
+  if (Math.abs(dz) < 1e-9) {
+    if (oz < minZ || oz > maxZ) return false;
+  } else {
+    let t1 = (minZ - oz) / dz;
+    let t2 = (maxZ - oz) / dz;
+    if (t1 > t2) {
+      const tt = t1;
+      t1 = t2;
+      t2 = tt;
+    }
+    tmin = Math.max(tmin, t1);
+    tmax = Math.min(tmax, t2);
+    if (tmin > tmax) return false;
+  }
+  return true;
 }

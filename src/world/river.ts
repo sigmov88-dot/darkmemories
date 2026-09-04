@@ -66,7 +66,7 @@ export function createRiver(scene: THREE.Scene, collision: CollisionWorld): Rive
   const bridge = new THREE.Group();
   scene.add(bridge);
 
-  const deckY = 0.28;
+  const deckY = 0.3; // верх досок 0.35 = физическая земля в getGroundHeight
   // доски настила
   for (let z = -7.6; z >= -14.4; z -= 0.62) {
     const plank = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.1, 0.55), woodMat);
