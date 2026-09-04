@@ -20,6 +20,17 @@ export const ALTAR_POS = { x: 0, z: -18, interactR: 4.6 } as const;
 export const PORTAL_POS = { x: 0, z: -21.5, triggerR: 1.7 } as const;
 export const SHARD_TAKE_R = 1.6;
 
+/** Румб от вектора (dx, dz): север — это -z. Чистая функция, покрыта тестом. */
+export function compassTo(dx: number, dz: number): string {
+  const points = [
+    'севере', 'северо-востоке', 'востоке', 'юго-востоке',
+    'юге', 'юго-западе', 'западе', 'северо-западе'
+  ];
+  let deg = (Math.atan2(dx, -dz) * 180) / Math.PI;
+  deg = ((deg % 360) + 360) % 360;
+  return points[Math.floor((deg + 22.5) / 45) % 8];
+}
+
 function glowTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 32;
@@ -175,7 +186,24 @@ export function createQuest(scene: THREE.Scene, ruins: Ruins, onPickup?: () => v
           collected++;
           onPickup?.();
           refreshHud();
-          setPrompt(collected >= total ? 'Неси их к алтарю во дворе замка' : '');
+          if (collected >= total) {
+            setPrompt('Неси их к алтарю во дворе замка');
+          } else {
+            // подсказка-компас до ближайшего оставшегося
+            let bx = 0;
+            let bz = 0;
+            let bd = Infinity;
+            for (const s of shards) {
+              if (s.taken) continue;
+              const d = distXZ(pp, s.group.position.x, s.group.position.z);
+              if (d < bd) {
+                bd = d;
+                bx = s.group.position.x;
+                bz = s.group.position.z;
+              }
+            }
+            setPrompt(`Следующий осколок — на ${compassTo(bx - pp.x, bz - pp.z)}`);
+          }
           return false;
         }
         if (nearAltar && collected >= total && !portalOpen) {

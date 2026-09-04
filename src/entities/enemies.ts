@@ -24,6 +24,7 @@ interface Enemy {
   maxHp: number;
   state: 'idle' | 'chase' | 'dead';
   attackCd: number;
+  attackWindup: number;
   flash: number;
   deathT: number;
   bobPhase: number;
@@ -65,9 +66,16 @@ function buildWraith(): { group: THREE.Group; bodyMat: THREE.MeshLambertMaterial
   return { group, bodyMat, eyeMat };
 }
 
+export interface EnemyHits {
+  toPlayer: number;
+  toEnemy: number;
+}
+
 export interface EnemyRig {
-  /** Возвращает число ударов, попавших по игроку в этом кадре */
-  update: (dt: number, t: number, playerPos: THREE.Vector3, attack: PlayerAttack | null, locked: boolean) => number;
+  update: (
+    dt: number, t: number, playerPos: THREE.Vector3,
+    attack: PlayerAttack | null, locked: boolean
+  ) => EnemyHits;
   reset: () => void;
 }
 
@@ -96,6 +104,7 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
       hp: 3, maxHp: 3,
       state: 'idle' as const,
       attackCd: 0,
+      attackWindup: 0,
       flash: 0,
       deathT: 0,
       bobPhase: i * 1.7,
@@ -110,7 +119,7 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
 
   return {
     update: (dt, t, pp, attack, locked) => {
-      let hitsOnPlayer = 0;
+      const hits: EnemyHits = { toPlayer: 0, toEnemy: 0 };
 
       for (const e of list) {
         if (!e.active) continue;
@@ -142,6 +151,7 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
             if (dot > 0.45) {
               e.lastHitId = attack.id;
               e.hp -= attack.dmg;
+              hits.toEnemy++;
               e.flash = 0.12;
               // нокбэк от игрока
               const nx = e.pos.x + (ax / Math.max(ad, 0.001)) * 0.9;
@@ -187,10 +197,27 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
             collision.resolve(nx, nz, ENEMY_R, resolveOut);
             e.pos.x = resolveOut.x;
             e.pos.z = resolveOut.z;
-          } else if (e.attackCd <= 0) {
-            // удар по игроку
-            hitsOnPlayer++;
-            e.attackCd = 1.3;
+          } else if (e.attackWindup <= 0 && e.attackCd <= 0) {
+            // начало замаха: 0.4с телеграфа (наклон + глаза)
+            e.attackWindup = 0.4;
+          }
+          if (e.attackWindup > 0) {
+            e.attackWindup -= dt;
+            const k = Math.max(e.attackWindup, 0) / 0.4;
+            e.group.rotation.x = -0.3 * k;
+            e.eyeMat.color.setHex(0xffcc00);
+            if (e.attackWindup <= 0) {
+              e.group.rotation.x = 0;
+              // удар: дистанция проверяется заново — можно отпрыгнуть
+              const sx = pp.x - e.pos.x;
+              const sz = pp.z - e.pos.z;
+              if (Math.hypot(sx, sz) < ATTACK_R + 0.35) {
+                hits.toPlayer++;
+                e.attackCd = 1.3;
+              } else {
+                e.attackCd = 0.4; // промах — короткая пауза
+              }
+            }
           }
         } else {
           // idle: дрейф у поста, глаза тусклые
@@ -246,7 +273,7 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
         e.pos.z = resolveOut.z;
       }
 
-      return hitsOnPlayer;
+      return hits;
     },
 
     reset: () => {
@@ -259,8 +286,10 @@ export function createEnemies(scene: THREE.Scene, collision: CollisionWorld): En
         e.deathT = 0;
         e.flash = 0;
         e.attackCd = 0;
+        e.attackWindup = 0;
         e.group.visible = true;
         e.group.scale.setScalar(1);
+        e.group.rotation.x = 0;
         e.group.position.copy(e.home);
       }
     }

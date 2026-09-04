@@ -82,7 +82,17 @@ const state = new GameState();
 const syncBody = (): void => state.syncBody(document.body);
 
 const player = new Player(engine.camera, document.body, engine.scene, input, collision);
-const quest = createQuest(engine.scene, ruins, () => player.heal(1));
+const hpEl = document.getElementById('hp');
+const flashHeal = (): void => {
+  if (!hpEl) return;
+  hpEl.classList.remove('healflash');
+  void hpEl.offsetWidth;
+  hpEl.classList.add('healflash');
+};
+const quest = createQuest(engine.scene, ruins, () => {
+  player.heal(1);
+  flashHeal();
+});
 const enemies = createEnemies(engine.scene, collision);
 player.init((locked) => {
   if (locked) state.onLock();
@@ -94,17 +104,21 @@ syncBody();
 
 enterBtn.addEventListener('click', () => player.lock());
 resumeBtn.addEventListener('click', () => player.lock());
+document.getElementById('glreload')?.addEventListener('click', () => window.location.reload());
 
 const fps = new FpsMeter();
 const clock = new THREE.Clock();
 const staminaFill = document.getElementById('stamina-fill');
-const hpEl = document.getElementById('hp');
 const weaponEl = document.getElementById('weapon');
 const dmgEl = document.getElementById('dmg');
 const drawsEl = document.getElementById('draws');
 const attackDir = new THREE.Vector3();
 let dmgFlash = 0;
 let drawTimer = 0;
+let hitStop = 0;
+let fpsWindow = 0;
+let fpsAcc = 0;
+let fpsCount = 0;
 
 document.getElementById('respawn')?.addEventListener('click', () => {
   enemies.reset();
@@ -114,9 +128,32 @@ document.getElementById('respawn')?.addEventListener('click', () => {
 
 function animate(): void {
   requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05);
+  let dt = Math.min(clock.getDelta(), 0.05);
+  // хит-стоп: мир замедляется на 60мс после попадания по врагу
+  if (hitStop > 0) {
+    hitStop -= dt;
+    dt *= 0.1;
+  }
   const t = clock.elapsedTime;
   const active = state.playing;
+
+  // авто-качество: слайд-шоу дольше 2с — пиксель крупнее (ручная настройка главнее).
+  // Кадры хит-стопа не считаем.
+  if (dt > 0 && hitStop <= 0) {
+    fpsAcc += 1 / Math.max(dt, 1e-4);
+    fpsCount++;
+    fpsWindow += dt;
+    if (fpsWindow >= 2) {
+      const avg = fpsAcc / Math.max(fpsCount, 1);
+      if (avg < 45 && pixelSize < 6) {
+        pixelSize++;
+        applyPixel();
+      }
+      fpsWindow = 0;
+      fpsAcc = 0;
+      fpsCount = 0;
+    }
+  }
 
   ruins.update(t);
   river.update(t, dt);
@@ -138,7 +175,8 @@ function animate(): void {
     };
   }
   const hits = enemies.update(dt, t, engine.camera.position, attack, active);
-  if (hits > 0 && active) {
+  if (hits.toEnemy > 0) hitStop = 0.06; // хит-стоп: кадр замирает от попадания
+  if (hits.toPlayer > 0 && active) {
     const res = player.damage(1);
     if (res === 'dead') {
       state.die();

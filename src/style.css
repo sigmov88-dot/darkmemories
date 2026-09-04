@@ -126,6 +126,15 @@ body.playing #hud { opacity: 1; }
   text-shadow: 0 2px 3px #000;
 }
 
+#hp.healflash {
+  animation: healpulse 0.6s ease;
+}
+
+@keyframes healpulse {
+  0% { color: #7dff8a; text-shadow: 0 0 14px #7dff8a; }
+  100% { color: #c83a3a; }
+}
+
 #weapon-row {
   position: absolute;
   top: 58px;
@@ -347,4 +356,31 @@ body.paused #pause {
 #resume:hover {
   border-color: #d8a050;
   box-shadow: 0 0 24px rgba(255, 140, 50, 0.35);
+}
+
+/* ---------- Потеря WebGL ---------- */
+#nogl {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 5, 9, 0.95);
+}
+
+body.nogl #nogl {
+  display: flex;
+}
+
+#glreload {
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #e8e0cc;
+  background: linear-gradient(180deg, #2a1c10, #170f08);
+  border: 1px solid #8a6a3a;
+  padding: 14px 34px;
+  cursor: pointer;
 }

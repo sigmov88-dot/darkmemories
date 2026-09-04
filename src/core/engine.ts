@@ -30,6 +30,12 @@ export class Engine {
     // CSS-апскейл без сглаживания
     this.canvas.style.imageRendering = 'pixelated';
 
+    // Потеря контекста (смена GPU, сон вкладки): вежливый экран вместо фриза
+    this.canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      document.body.classList.add('nogl');
+    });
+
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x070a14);
     // Гуще, чем в M1, но реже старта: мрак вернулся, маяки все еще видны

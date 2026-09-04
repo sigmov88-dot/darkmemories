@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { createQuest, SHARD_SPOTS, ALTAR_POS, PORTAL_POS } from './quest';
+import { createQuest, SHARD_SPOTS, ALTAR_POS, PORTAL_POS, compassTo } from './quest';
 import type { Ruins } from '../world/ruins';
 
 function pressE(): void {
@@ -66,5 +66,18 @@ describe('quest flow', () => {
     quest.update(0.016, 1, pp, false);
     expect(quest.collectedCount()).toBe(0);
     expect(quest.elapsedActive()).toBe(0);
+  });
+});
+
+describe('compassTo', () => {
+  it('8 румбов, север — это -z', () => {
+    expect(compassTo(0, -10)).toBe('севере');
+    expect(compassTo(10, -10)).toBe('северо-востоке');
+    expect(compassTo(10, 0)).toBe('востоке');
+    expect(compassTo(10, 10)).toBe('юго-востоке');
+    expect(compassTo(0, 10)).toBe('юге');
+    expect(compassTo(-10, 10)).toBe('юго-западе');
+    expect(compassTo(-10, 0)).toBe('западе');
+    expect(compassTo(-10, -10)).toBe('северо-западе');
   });
 });
