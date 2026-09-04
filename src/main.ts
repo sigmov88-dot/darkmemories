@@ -42,7 +42,7 @@ createVillage(engine.scene, collision);
 const ruins = createRuins(engine.scene, collision);
 const river = createRiver(engine.scene, collision);
 const lake = createLake(engine.scene, collision);
-createCrags(engine.scene, collision);
+const crags = createCrags(engine.scene, collision);
 createCastle(engine.scene, collision);
 const torches = createTorches(engine.scene, collision);
 createDeadForest(engine.scene, collision);
@@ -117,6 +117,7 @@ function animate(): void {
   ruins.update(t);
   river.update(t, dt);
   lake.update(t, dt);
+  crags.update(t);
   torches.update(t);
   fog.update(t, dt);
   player.update(dt, t);

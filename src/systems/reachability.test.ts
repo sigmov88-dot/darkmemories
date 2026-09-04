@@ -111,6 +111,8 @@ describe('reachability', () => {
       // M1: новые земли тоже доступны — середина дамбы и смотровая
       expect(nearestVisitedDist(-33, -4)).toBeLessThan(1.0);
       expect(nearestVisitedDist(38, -8)).toBeLessThan(1.5);
+      // M2: остров (пьедестал под ключ) достижим вброд от дамбы
+      expect(nearestVisitedDist(-44.5, -3)).toBeLessThan(1.0);
     },
     60000
   );
