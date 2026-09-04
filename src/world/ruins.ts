@@ -182,7 +182,9 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
   rune.rotation.x = -Math.PI / 2;
   rune.position.set(0, agy + 0.52, -18);
   g.add(rune);
-  collision.addCircle(0, -18, 3.4); // ритуальный круг не топтать
+  // Коллайдер только вокруг самого алтаря (1.1), а не всего круга:
+  // иначе запретная зона перекрывает проход от моста к осколку и порталу.
+  collision.addCircle(0, -18, 1.1);
 
   // --- Портал-врата ---
   const pgy = getGroundHeight(0, -21.5);

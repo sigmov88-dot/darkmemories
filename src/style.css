@@ -217,7 +217,7 @@ body.dead #hud {
   border-color: #9fd8ff;
 }
 
-/* ---------- Overlay ---------- */
+/* ---------- Overlay (только интро) ---------- */
 #overlay {
   position: fixed;
   inset: 0;
@@ -228,11 +228,13 @@ body.dead #hud {
   background: radial-gradient(ellipse at center, rgba(5,7,13,0.55) 0%, rgba(5,7,13,0.92) 100%);
   backdrop-filter: blur(2px);
   transition: opacity 0.9s ease;
-}
-
-body.playing #overlay {
   opacity: 0;
   pointer-events: none;
+}
+
+body.intro #overlay {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .overlay-inner {
@@ -300,4 +302,36 @@ body.playing #overlay {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(169, 162, 148, 0.55);
+}
+
+/* ---------- Пауза ---------- */
+#pause {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(5,7,13,0.55) 0%, rgba(5,7,13,0.92) 100%);
+}
+
+body.paused #pause {
+  display: flex;
+}
+
+#resume {
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #e8e0cc;
+  background: linear-gradient(180deg, #2a1c10, #170f08);
+  border: 1px solid #8a6a3a;
+  padding: 14px 34px;
+  cursor: pointer;
+}
+
+#resume:hover {
+  border-color: #d8a050;
+  box-shadow: 0 0 24px rgba(255, 140, 50, 0.35);
 }

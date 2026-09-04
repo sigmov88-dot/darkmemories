@@ -6,10 +6,8 @@
     <title>DARK FANTASY — Проклятые Руины</title>
     <meta name="description" content="Браузерная 3D Dark Fantasy сцена: туман, руины, факелы. Three.js + Vite." />
   </head>
-  <body>
+  <body class="intro">
     <canvas id="scene"></canvas>
-
-    <div id="vignette-fallback"></div>
 
     <div id="hud">
       <div id="crosshair"></div>
@@ -61,6 +59,16 @@
         <h2>но осколки остались при тебе</h2>
         <p>Тени отступят. Встань и иди снова.</p>
         <button id="respawn">Встать в деревне</button>
+      </div>
+    </div>
+
+    <div id="pause">
+      <div class="overlay-inner">
+        <div class="rune">ᛟ ✦ ᛟ</div>
+        <h1>ПЕРЕДЫШКА</h1>
+        <h2>туман ждет</h2>
+        <p>Таймер стоит. Тени замерли.</p>
+        <button id="resume">Продолжить</button>
       </div>
     </div>
   </body>

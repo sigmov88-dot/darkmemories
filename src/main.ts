@@ -4,6 +4,7 @@ import { Engine } from './core/engine';
 import { Input } from './core/input';
 import { createPost } from './core/post';
 import { CollisionWorld } from './systems/collision';
+import { GameState } from './systems/gamestate';
 import { setupAtmosphere } from './world/atmosphere';
 import { createGround } from './world/ground';
 import { createVillage } from './world/village';
@@ -21,6 +22,7 @@ import { FpsMeter } from './systems/fps';
 
 const canvas = document.getElementById('scene') as HTMLCanvasElement;
 const enterBtn = document.getElementById('enter') as HTMLButtonElement;
+const resumeBtn = document.getElementById('resume') as HTMLButtonElement;
 const pixelLabel = document.getElementById('pixel') as HTMLElement | null;
 
 const engine = new Engine(canvas);
@@ -66,15 +68,23 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// Единая машина состояний: dead и won взаимоисключающи по построению
+const state = new GameState();
+const syncBody = (): void => state.syncBody(document.body);
+
 const player = new Player(engine.camera, document.body, engine.scene, input, collision);
 const quest = createQuest(engine.scene, ruins, () => player.heal(1));
 const enemies = createEnemies(engine.scene, collision);
 player.init((locked) => {
-  document.body.classList.toggle('playing', locked);
-  if (locked) quest.start();
+  if (locked) state.onLock();
+  else state.onUnlock();
+  syncBody();
+  if (state.playing) quest.start();
 });
+syncBody();
 
 enterBtn.addEventListener('click', () => player.lock());
+resumeBtn.addEventListener('click', () => player.lock());
 
 const fps = new FpsMeter();
 const clock = new THREE.Clock();
@@ -84,22 +94,19 @@ const dmgEl = document.getElementById('dmg');
 const drawsEl = document.getElementById('draws');
 const attackDir = new THREE.Vector3();
 let dmgFlash = 0;
-let dead = false;
 let drawTimer = 0;
 
 document.getElementById('respawn')?.addEventListener('click', () => {
-  dead = false;
-  document.body.classList.remove('dead');
   enemies.reset();
   player.respawn(0, 26);
-  player.lock(); // клик — жест, lock разрешен
+  player.lock(); // клик — жест, lock разрешен; onLock переведет dead → playing
 });
 
 function animate(): void {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
-  const playing = document.body.classList.contains('playing') && !dead;
+  const active = state.playing;
 
   ruins.update(t);
   river.update(t, dt);
@@ -109,23 +116,29 @@ function animate(): void {
 
   // бой: удар игрока → враги; враги → игрок
   let attack: PlayerAttack | null = null;
-  if (playing && player.attackActive()) {
+  if (active && player.attackActive()) {
     player.attackDir(attackDir);
     attack = { active: true, id: player.attackId(), pos: engine.camera.position, dir: attackDir };
   }
-  const hits = enemies.update(dt, t, engine.camera.position, attack, playing);
-  if (hits > 0 && playing) {
-    if (player.damage(1)) {
-      dead = true;
+  const hits = enemies.update(dt, t, engine.camera.position, attack, active);
+  if (hits > 0 && active) {
+    const res = player.damage(1);
+    if (res === 'dead') {
+      state.die();
+      syncBody();
       document.exitPointerLock?.();
-      document.body.classList.remove('playing');
-      document.body.classList.add('dead');
-    } else {
+    } else if (res === 'hit') {
       dmgFlash = 1;
     }
+    // 'ignored' — ни вспышки, ни урона
   }
 
-  quest.update(dt, t, engine.camera.position, playing);
+  // победа возможна только из playing — dead+won исключены состоянием
+  if (quest.update(dt, t, engine.camera.position, active)) {
+    state.win();
+    syncBody();
+    document.exitPointerLock?.();
+  }
 
   if (staminaFill) {
     const s = player.stamina01();

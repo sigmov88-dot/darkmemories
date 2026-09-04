@@ -51,12 +51,12 @@ export class Player {
     return this.maxHp;
   }
 
-  /** Урон по игроку. Возвращает true если умер. */
-  damage(n: number): boolean {
-    if (this.invuln > 0) return false;
+  /** Урон по игроку: 'ignored' — неуязвимость, 'hit' — ранен, 'dead' — убит. */
+  damage(n: number): 'ignored' | 'hit' | 'dead' {
+    if (this.invuln > 0) return 'ignored';
     this.hp -= n;
     this.invuln = 1.2;
-    return this.hp <= 0;
+    return this.hp <= 0 ? 'dead' : 'hit';
   }
 
   heal(n: number): void {
@@ -73,6 +73,13 @@ export class Player {
     this.invuln = 1.5;
     this.stamina = 100;
     this.exhausted = false;
+    // сброс всего ввода/анимаций, чтобы не стрелял старый замах
+    this.attackCd = 0;
+    this.swingT = 0;
+    this.wantJump = false;
+    this.bob = 0;
+    this.handGroup.rotation.set(0, 0, 0);
+    this.handGroup.position.set(0.35, -0.3, -0.7);
   }
 
   /** Активен ли удар прямо сейчас (для попадания по врагам) */
@@ -107,7 +114,7 @@ export class Player {
       onLockChange(false);
     });
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' && !e.repeat) {
         this.wantJump = true;
         e.preventDefault();
       }
@@ -186,25 +193,22 @@ export class Player {
       return;
     }
 
-    // --- Горизонталь + стамина ---
-    const pressingMove = Math.abs(this.input.forward) + Math.abs(this.input.strafe) > 0.1;
-    if (this.input.run && pressingMove && this.grounded && !this.exhausted) {
-      this.stamina -= 20 * dt;
-      if (this.stamina <= 0) {
-        this.stamina = 0;
-        this.exhausted = true;
-      }
-    } else {
-      this.stamina += (pressingMove ? 14 : 24) * dt;
-      if (this.stamina > 100) this.stamina = 100;
-      if (this.exhausted && this.stamina > 25) this.exhausted = false;
+    // --- Горизонталь: нормализованный ввод (диагональ не быстрее) ---
+    let ix = this.input.strafe;
+    let iz = this.input.forward;
+    const ilen = Math.hypot(ix, iz);
+    if (ilen > 1) {
+      ix /= ilen;
+      iz /= ilen;
     }
-    const canRun = this.input.run && !this.exhausted && this.stamina > 1;
+    const pressingMove = ilen > 0.1;
+    // бег только по земле: в воздухе — скорость шага, стамина заморожена
+    const canRun = this.grounded && this.input.run && !this.exhausted && this.stamina > 1;
     const speed = canRun ? 7.2 : 4.2;
     // в воздухе управление слабее
     const grip = this.grounded ? 8 : 2.5;
-    this.vel.x += (this.input.strafe * speed - this.vel.x) * Math.min(dt * grip, 1);
-    this.vel.z += (this.input.forward * speed - this.vel.z) * Math.min(dt * grip, 1);
+    this.vel.x += (ix * speed - this.vel.x) * Math.min(dt * grip, 1);
+    this.vel.z += (iz * speed - this.vel.z) * Math.min(dt * grip, 1);
 
     this.controls.moveRight(this.vel.x * dt);
     this.controls.moveForward(this.vel.z * dt);
@@ -241,6 +245,23 @@ export class Player {
         this.vy = 0;
       } else {
         this.feetY = ground;
+      }
+    }
+
+    // --- Стамина: только на земле, расход только за реальное движение ---
+    // (бег в стену и полеты bunny-hop стамину не жгут и не копят)
+    if (this.grounded) {
+      const realSpeed = Math.hypot(this.vel.x, this.vel.z);
+      if (canRun && pressingMove && realSpeed > 1.0) {
+        this.stamina -= 20 * dt;
+        if (this.stamina <= 0) {
+          this.stamina = 0;
+          this.exhausted = true;
+        }
+      } else {
+        this.stamina += (pressingMove ? 14 : 24) * dt;
+        if (this.stamina > 100) this.stamina = 100;
+        if (this.exhausted && this.stamina > 25) this.exhausted = false;
       }
     }
 
