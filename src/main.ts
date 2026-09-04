@@ -170,7 +170,7 @@ function animate(): void {
     crags.update(t);
     satellites.update(t, dt);
     torches.update(t);
-    fog.update(t, dt);
+    fog.update(t, dt, engine.camera.position.x, engine.camera.position.z);
   }
   // тени следуют за игроком: свет и shadow-камера покрывают ±35м вокруг него
   atmosphere.dirLight.target.position.set(engine.camera.position.x, 0, engine.camera.position.z);

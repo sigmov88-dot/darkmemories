@@ -102,13 +102,13 @@ export function createSatellites(scene: THREE.Scene, collision: CollisionWorld):
 
   // ---------- Осадный лагерь ----------
   const campZ = -40;
-  // частокол дугой с проемом на юг
+  // частокол дугой: выпуклость на север, вход с юга (от замка)
   const stakeGeo = pixelCylinder(0.09, 0.12, 2.6, 6);
   const stakePos: Array<[number, number]> = [];
   for (let i = 0; i <= 20; i++) {
-    const a = Math.PI * 0.15 + (i / 20) * Math.PI * 0.7; // дуга с севера, юг открыт
+    const a = Math.PI * 0.15 + (i / 20) * Math.PI * 0.7;
     const x = Math.cos(a) * 9;
-    const z = campZ + Math.sin(a) * 9 * 0.7 - 2;
+    const z = campZ - Math.sin(a) * 9 * 0.7 + 2;
     stakePos.push([x, z]);
   }
   const stakes = new THREE.InstancedMesh(stakeGeo, darkWood, stakePos.length);
@@ -122,10 +122,15 @@ export function createSatellites(scene: THREE.Scene, collision: CollisionWorld):
   stakes.instanceMatrix.needsUpdate = true;
   stakes.castShadow = true;
   scene.add(stakes);
-  // катапульта
+  // частокол твердый (юг открыт — вход), 9 блоков по дуге
+  for (let i = 0; i <= 8; i++) {
+    const a = Math.PI * 0.15 + (i / 8) * Math.PI * 0.7;
+    collision.addBox(Math.cos(a) * 9, campZ - Math.sin(a) * 9 * 0.7 + 2, 2.4, 2.4);
+  }
+  // катапульта внутри лагеря
   const cat = new THREE.Group();
-  const catY = getGroundHeight(0, campZ);
-  cat.position.set(0, catY, campZ);
+  const catY = getGroundHeight(0, -42.5);
+  cat.position.set(0, catY, -42.5);
   cat.rotation.y = 0.15;
   const frame = new THREE.Mesh(pixelBox(1.6, 0.5, 3.0), woodMat);
   frame.position.y = 0.7;
@@ -144,9 +149,9 @@ export function createSatellites(scene: THREE.Scene, collision: CollisionWorld):
     cat.add(wheel);
   }
   scene.add(cat);
-  collision.addBox(0, campZ, 2.4, 3.6);
-  // палатки-пирамиды
-  for (const [tx, tz] of [[-5.5, -38.5], [5.5, -39.5]] as Array<[number, number]>) {
+  collision.addBox(0, -42.5, 2.4, 3.6);
+  // палатки-пирамиды внутри
+  for (const [tx, tz] of [[-5.5, -42.0], [5.5, -42.0]] as Array<[number, number]>) {
     const tent = new THREE.Mesh(new THREE.ConeGeometry(1.7, 2.1, 4), canvasMat);
     tent.position.set(tx, getGroundHeight(tx, tz) + 1.05, tz);
     tent.rotation.y = Math.PI / 4 + tx;

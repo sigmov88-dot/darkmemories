@@ -11,7 +11,7 @@ import { createCastle } from '../world/castle';
 import { createTorches } from '../world/torches';
 import { createDeadForest } from '../world/forest';
 import { createSatellites } from '../world/satellites';
-import { SHARD_SPOTS, ALTAR_POS, PORTAL_POS, SHARD_TAKE_R } from './quest';
+import { SHARD_SPOTS, ALTAR_POS, PORTAL_POS, SHARD_TAKE_R } from '../world/landmarks';
 
 /**
  * Тест проходимости: ПОЛНЫЙ мир (все строители с коллайдерами).

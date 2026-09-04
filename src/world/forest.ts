@@ -60,7 +60,7 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
     dummy.scale.set(s, s, s);
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);
-    if (Math.abs(x) < 34) collision.addCircle(x, z, 0.5);
+    collision.addCircle(x, z, 0.5); // все стволы твердые, включая дальние
   });
   mesh.count = spots.length;
   mesh.instanceMatrix.needsUpdate = true;

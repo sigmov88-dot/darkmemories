@@ -171,7 +171,8 @@ export function createVillage(scene: THREE.Scene, collision: CollisionWorld): vo
       cart.add(wheel);
     }
   }
-  collision.addBox(8.8, 28.8, 2.0, 2.8);
+  // AABB с запасом под поворот 0.4 рад (2.0×2.8 → ~2.9×3.4)
+  collision.addBox(8.8, 28.8, 3.0, 3.4);
 
   // Стога сена на полях
   const hayMat = new THREE.MeshLambertMaterial({ color: 0x8a7134 });

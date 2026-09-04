@@ -19,11 +19,11 @@ export class FpsMeter {
         this.el.textContent = `${fps} fps`;
         this.el.style.color = fps >= 50 ? 'rgba(140,200,140,0.7)' : fps >= 30 ? 'rgba(220,190,100,0.8)' : 'rgba(220,100,80,0.9)';
       }
+      if (this.posEl && x !== undefined && z !== undefined) {
+        this.posEl.textContent = `${x.toFixed(1)}, ${z.toFixed(1)}`;
+      }
       this.acc = 0;
       this.frames = 0;
-    }
-    if (this.posEl && x !== undefined && z !== undefined && this.frames % 10 === 0) {
-      this.posEl.textContent = `${x.toFixed(1)}, ${z.toFixed(1)}`;
     }
   }
 }

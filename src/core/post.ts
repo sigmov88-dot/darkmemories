@@ -23,12 +23,6 @@ export function createPost(
   pixelSize = 4
 ): PostRig {
   const composer = new EffectComposer(renderer);
-  // Nearest-апскейл самого композера тоже
-  const rt = (composer as unknown as { renderTarget1: THREE.WebGLRenderTarget }).renderTarget1;
-  if (rt) {
-    rt.texture.minFilter = THREE.NearestFilter;
-    rt.texture.magFilter = THREE.NearestFilter;
-  }
 
   const pixelPass = new RenderPixelatedPass(pixelSize, scene, camera);
   // Чуть мягче обводку, чтобы не было черной каши

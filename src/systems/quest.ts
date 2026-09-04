@@ -1,24 +1,12 @@
 import * as THREE from 'three';
 import { getGroundHeight } from '../world/ground';
 import type { Ruins } from '../world/ruins';
+import { SHARD_SPOTS, ALTAR_POS, PORTAL_POS, SHARD_TAKE_R } from '../world/landmarks';
 
 interface Shard {
   group: THREE.Group;
   taken: boolean;
 }
-
-/** Позиции осколков [x, z, подсказка]. Единый источник правды и для тестов. */
-export const SHARD_SPOTS: ReadonlyArray<readonly [number, number, string]> = [
-  [-8.6, -4.2, 'дальняя могила'],
-  [5.5, 2.5, 'часовня'],
-  [-10.5, 34.2, 'за амбаром'],
-  [9.5, -3.0, 'за часовней'],
-  [3.9, -21.2, 'двор замка']
-];
-
-export const ALTAR_POS = { x: 0, z: -18, interactR: 4.6 } as const;
-export const PORTAL_POS = { x: 0, z: -21.5, triggerR: 1.7 } as const;
-export const SHARD_TAKE_R = 1.6;
 
 /** Румб от вектора (dx, dz): север — это -z. Чистая функция, покрыта тестом. */
 export function compassTo(dx: number, dz: number): string {

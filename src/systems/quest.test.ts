@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { createQuest, SHARD_SPOTS, ALTAR_POS, PORTAL_POS, compassTo } from './quest';
+import { createQuest, compassTo } from './quest';
+import { SHARD_SPOTS, ALTAR_POS, PORTAL_POS } from '../world/landmarks';
 import type { Ruins } from '../world/ruins';
 
 function pressE(): void {

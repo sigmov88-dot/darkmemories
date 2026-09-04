@@ -215,7 +215,8 @@ export function createLake(scene: THREE.Scene, collision: CollisionWorld): LakeR
   mast.rotation.z = 0.35;
   boat.add(mast);
   scene.add(boat);
-  collision.addBox(bx, bz, 1.8, 3.4);
+  // AABB с запасом под поворот 0.7 рад корпуса 1.4×3.2
+  collision.addBox(bx, bz, 3.4, 3.6);
 
   // --- Птицы над озером ---
   const birdMat = new THREE.MeshBasicMaterial({ color: 0x0d0f16 });

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export interface FogRig {
-  update: (t: number, dt: number) => void;
+  update: (t: number, dt: number, camX: number, camZ: number) => void;
 }
 
 /**
@@ -57,11 +57,11 @@ export function createGroundFog(scene: THREE.Scene): FogRig {
   scene.add(points);
 
   return {
-    update: (t: number, dt: number) => {
+    update: (t: number, dt: number, camX: number, camZ: number) => {
       for (const m of cards) {
         m.position.x += dt * m.userData.speed;
         if (m.position.x > 24) m.position.x = -24;
-        m.lookAt(m.position.x, 0.45, 30); // всегда лицом к игроку по оси
+        m.lookAt(camX, 0.45, camZ); // карточки лицом к игроку, а не на юг
       }
       const p = pGeo.attributes.position as THREE.BufferAttribute;
       for (let i = 0; i < COUNT; i++) {
