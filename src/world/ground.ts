@@ -16,6 +16,21 @@ export function riverZAt(x: number): number {
   return -11 + Math.sin(x * 0.08) * 2.0;
 }
 
+// --- Границы открытого мира (один источник для клампа игрока) ---
+export const WORLD = {
+  minX: -105, maxX: 105, minZ: -92, maxZ: 92,
+  wallR: 100, wallGain: 0.45
+} as const;
+
+// --- Северные пики и западный хребет (граница мира, за контентом) ---
+export const PEAKS: Array<readonly [number, number, number, number]> = [
+  // x, z, высота, радиус
+  [-30, -82, 14, 18],
+  [20, -88, 18, 20],
+  [62, -72, 12, 15],
+  [-75, -60, 10, 14]
+];
+
 // --- Черное озеро ---
 export const LAKE = { x: -50, z: -2, rx: 24, rz: 17, depth: 2.4, waterY: -0.7 };
 export const ISLAND = { x: -46, z: -4, r: 7 };
@@ -121,15 +136,24 @@ export function getGroundHeight(x: number, z: number): number {
     h = VIEWPOINT.h + (h - VIEWPOINT.h) * smooth01((dv - 3.5) / 2);
   }
 
+  // Северные пики и западный хребет
+  for (const [px, pz, ph, pr] of PEAKS) {
+    const d = Math.hypot(x - px, z - pz);
+    if (d < pr * 2.2) {
+      const k = d / pr;
+      h += ph * Math.exp(-k * k);
+    }
+  }
+
   // Вал по краю мира (далеко, старые зоны не задевает)
   const d = Math.sqrt(x * x + (z + 2) * (z + 2));
-  if (d > 58) h += (d - 58) * 0.4;
+  if (d > WORLD.wallR) h += (d - WORLD.wallR) * WORLD.wallGain;
 
   return h;
 }
 
 export function createGround(scene: THREE.Scene): void {
-  const geo = new THREE.PlaneGeometry(240, 220, 170, 156);
+  const geo = new THREE.PlaneGeometry(320, 300, 228, 214);
   geo.rotateX(-Math.PI / 2);
   const p = geo.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < p.count; i++) {

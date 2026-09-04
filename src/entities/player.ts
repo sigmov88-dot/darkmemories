@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { Input } from '../core/input';
 import { CollisionWorld, ResolveOut } from '../systems/collision';
-import { getGroundHeight } from '../world/ground';
+import { getGroundHeight, WORLD } from '../world/ground';
 import { makePixelFlame } from '../world/pixel';
 import { WEAPONS, WeaponId, SWING_LEN, SWING_HIT_WINDOW } from './weapons';
 
@@ -278,9 +278,9 @@ export class Player {
     this.controls.moveForward(this.vel.z * dt);
 
     const p = this.camera.position;
-    // край мира (открытый регион)
-    p.x = Math.max(-70, Math.min(70, p.x));
-    p.z = Math.max(-58, Math.min(58, p.z));
+    // край мира (открытый регион, константы из ground.ts)
+    p.x = Math.max(WORLD.minX, Math.min(WORLD.maxX, p.x));
+    p.z = Math.max(WORLD.minZ, Math.min(WORLD.maxZ, p.z));
     // коллизии (без аллокаций)
     this.collision.resolve(p.x, p.z, RADIUS, this.resolveOut);
     p.x = this.resolveOut.x;

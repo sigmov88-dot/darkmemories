@@ -127,6 +127,9 @@ describe('reachability', () => {
       expect(nearestVisitedDist(10, 38)).toBeLessThan(1.5);
       expect(nearestVisitedDist(0, -36)).toBeLessThan(1.5);
       expect(nearestVisitedDist(44.5, -12)).toBeLessThan(1.5);
+      // Пепелище и цвингер (патрульный проход между стенами)
+      expect(nearestVisitedDist(26, 19)).toBeLessThan(1.5);
+      expect(nearestVisitedDist(9, -20)).toBeLessThan(1.5);
       // Мост — единственный путь через реку в окне карты
       expect(nearestVisitedDist(0, -11)).toBeLessThan(0.8);
       // Негативы: глубь озера, стремнина и конец русла — вне доступа

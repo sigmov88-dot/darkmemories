@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CollisionWorld } from '../systems/collision';
-import { getGroundHeight } from './ground';
+import { getGroundHeight, PEAKS } from './ground';
 import { makePixelWood, makePixelThatch, makePixelPlaster, makePixelStone, makePixelDarkStone } from './pixel';
 import { pixelBox, pixelCylinder } from './pixel';
 
@@ -194,6 +194,114 @@ export function createSatellites(scene: THREE.Scene, collision: CollisionWorld):
     scene.add(railPole);
   }
   collision.addCircle(twX, twZ, 2.2);
+
+  // ---------- Пепелище: сгоревшая деревушка (26, 18) ----------
+  const charMat = new THREE.MeshLambertMaterial({ color: 0x17130f });
+  const ashMat = new THREE.MeshLambertMaterial({ color: 0x4a4a4e });
+  // выжженная земля
+  const scorchGeo = new THREE.CircleGeometry(9, 18);
+  scorchGeo.rotateX(-Math.PI / 2);
+  {
+    const pos = scorchGeo.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      const wx = 25.5 + pos.getX(i);
+      const wz = 19.5 + pos.getZ(i);
+      pos.setY(i, getGroundHeight(wx, wz) + 0.03);
+    }
+    scorchGeo.computeVertexNormals();
+  }
+  const scorch = new THREE.Mesh(scorchGeo, ashMat);
+  scorch.position.set(0, 0, 0);
+  scorch.receiveShadow = true;
+  scene.add(scorch);
+
+  function burntShell(cx: number, cz: number, w: number, d: number, seed: number): void {
+    const gy = getGroundHeight(cx, cz);
+    // стены-огрызки разной высоты
+    const hs = [1.4, 0.9, 1.7, 1.1];
+    const walls: Array<[number, number, number, number]> = [
+      [0, -d / 2, w, 0.5], [0, d / 2, w, 0.5], [-w / 2, 0, 0.5, d], [w / 2, 0, 0.5, d]
+    ];
+    walls.forEach(([ox, oz, ww, wd], i) => {
+      const h = hs[(i + seed) % 4];
+      const m = new THREE.Mesh(pixelBox(ww, h, wd), i % 2 === 0 ? plasterMat : charMat);
+      m.position.set(cx + ox, gy + h / 2, cz + oz);
+      m.rotation.y = (seed * 0.13 + i * 0.02) % 0.1;
+      m.castShadow = m.receiveShadow = true;
+      scene.add(m);
+      collision.addBox(cx + ox, cz + oz, ww + 0.15, wd + 0.15);
+    });
+    // обугленные балки крест-накрест
+    for (let i = 0; i < 2; i++) {
+      const beam = new THREE.Mesh(pixelBox(0.22, 0.22, Math.max(w, d) * 0.9), charMat);
+      beam.position.set(cx, gy + 1.0 + i * 0.3, cz);
+      beam.rotation.y = seed + i * 1.1;
+      beam.rotation.z = 0.12 * (i - 0.5);
+      beam.castShadow = true;
+      scene.add(beam);
+    }
+    // пепел внутри
+    const ash = new THREE.Mesh(new THREE.CircleGeometry(Math.min(w, d) * 0.32, 10), ashMat);
+    ash.rotation.x = -Math.PI / 2;
+    ash.position.set(cx, gy + 0.06, cz);
+    ash.receiveShadow = true;
+    scene.add(ash);
+  }
+  burntShell(23, 16, 3.6, 3.2, 1);
+  burntShell(28.5, 19, 4.0, 3.4, 2);
+  burntShell(24.5, 23.5, 3.2, 3.0, 3);
+  // заваленный колодец
+  const bwX = 26.5;
+  const bwZ = 20.5;
+  const bwY = getGroundHeight(bwX, bwZ);
+  const bwRing = new THREE.Mesh(pixelCylinder(0.9, 1.0, 0.7, 8), stoneMat);
+  bwRing.position.set(bwX, bwY + 0.35, bwZ);
+  bwRing.castShadow = true;
+  scene.add(bwRing);
+  const bwFill = new THREE.Mesh(pixelBox(1.2, 0.5, 1.2), darkMat);
+  bwFill.position.set(bwX, bwY + 0.6, bwZ);
+  bwFill.rotation.y = 0.4;
+  scene.add(bwFill);
+  collision.addCircle(bwX, bwZ, 1.1);
+  // сухие стебли мертвого огорода
+  const stalkMat = new THREE.MeshLambertMaterial({ color: 0x5a4a2a });
+  for (let i = 0; i < 12; i++) {
+    const sx = 21 + ((i * 37) % 10);
+    const sz2 = 25 + ((i * 53) % 5);
+    const stalk = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7 + (i % 3) * 0.2, 0.08), stalkMat);
+    stalk.position.set(sx, getGroundHeight(sx, sz2) + 0.4, sz2);
+    stalk.rotation.z = ((i * 7) % 10) / 10 - 0.5;
+    scene.add(stalk);
+  }
+
+  // ---------- Горные скалы на склонах пиков ----------
+  const mountMat = new THREE.MeshLambertMaterial({ color: 0x3f434f });
+  const mountGeo = new THREE.DodecahedronGeometry(1.6, 0);
+  const mspots: Array<[number, number, number]> = [];
+  for (const [px, pz, , pr] of PEAKS) {
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + pr;
+      const r = pr * (0.8 + ((i * 41) % 10) / 14);
+      mspots.push([px + Math.cos(a) * r, pz + Math.sin(a) * r, 1.2 + ((i * 17) % 10) / 6]);
+    }
+  }
+  const mounts = new THREE.InstancedMesh(mountGeo, mountMat, mspots.length);
+  mounts.castShadow = true;
+  const md = new THREE.Object3D();
+  mspots.forEach(([x, z, s], i) => {
+    md.position.set(x, getGroundHeight(x, z) + 0.3 * s, z);
+    md.rotation.set((i * 1.7) % 3, (i * 2.9) % 3, 0);
+    md.scale.set(s, s * 0.75, s);
+    md.updateMatrix();
+    mounts.setMatrixAt(i, md.matrix);
+  });
+  mounts.instanceMatrix.needsUpdate = true;
+  scene.add(mounts);
+  // крутые ядра пиков непроходимы (r где высота > 8)
+  const peakBlock: Array<[number, number, number]> = [
+    [-30, -82, 13], [20, -88, 18], [62, -72, 10], [-75, -60, 7]
+  ];
+  for (const [px, pz, pr] of peakBlock) collision.addCircle(px, pz, pr);
 
   return {
     update: (_t: number, dt: number) => {

@@ -25,10 +25,10 @@ export function createProps(scene: THREE.Scene): void {
   });
 
   const spots: Array<[number, number]> = [];
-  for (let i = 0; i < 620 && spots.length < 300; i++) {
-    const x = ((i * 73) % 112) - 64;
-    const z = 58 - ((i * 57) % 118);
-    if (x > -4 && x < 22 && z > 36 && z < 54) continue; // ферма (грядки)
+  for (let i = 0; i < 800 && spots.length < 360; i++) {
+    const x = ((i * 73) % 142) - 80;
+    const z = 64 - ((i * 57) % 126);
+    if (x > -4 && x < 22 && z > 36 && z < 56) continue; // ферма (грядки/дом)
     if (Math.hypot(x - 48, z + 12) < 8) continue; // башня
     if (clearForGrass(x, z)) spots.push([x, z]);
   }
@@ -49,12 +49,12 @@ export function createProps(scene: THREE.Scene): void {
   inst.instanceMatrix.needsUpdate = true;
   scene.add(inst);
 
-  // Камыш вдоль берегов
+  // Камыш вдоль берегов (по всей длине воды)
   const reedMat = new THREE.MeshLambertMaterial({
     map: grassTex, alphaTest: 0.5, side: THREE.DoubleSide, color: 0x6a8a7a
   });
   const reeds: Array<[number, number]> = [];
-  for (let x = -34; x <= 34; x += 1.7) {
+  for (let x = -60; x <= 40; x += 1.7) {
     const rz = riverZAt(x);
     if (Math.abs(x) < 2.6) continue; // проем моста
     reeds.push([x + 0.4, rz + 4.1]);

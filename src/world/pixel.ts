@@ -90,7 +90,7 @@ export function makePixelGround(): THREE.CanvasTexture {
     ctx.fillStyle = '#0d0f16';
     ctx.fillRect(Math.floor(rnd() * 64), Math.floor(rnd() * 64), 2, 1);
   }
-  return toPixel(new THREE.CanvasTexture(c), 96, 88);
+  return toPixel(new THREE.CanvasTexture(c), 128, 120);
 }
 
 /** Камень руин: кирпичи 32px */

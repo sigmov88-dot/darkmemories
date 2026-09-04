@@ -31,10 +31,10 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
 
   const spots: Array<[number, number]> = [];
   // внешнее кольцо по новым границам
-  const COUNT = 150;
+  const COUNT = 210;
   for (let i = 0; i < COUNT; i++) {
     const ang = (i / COUNT) * Math.PI * 2 + (i % 7) * 0.09;
-    const r = 36 + ((i * 29) % 26);
+    const r = 62 + ((i * 29) % 34);
     const x = Math.cos(ang) * r;
     const z = Math.sin(ang) * r * 0.9 - 2;
     if (clearOfMap(x, z)) spots.push([x, z]);
