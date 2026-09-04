@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DARK FANTASY — Проклятые Руины</title>
+    <meta name="description" content="Браузерная 3D Dark Fantasy сцена: туман, руины, факелы. Three.js + Vite." />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div id="vignette-fallback"></div>
+
+    <div id="hud">
+      <div id="crosshair"></div>
+      <div id="stats">
+        <span id="fps">-- fps</span>
+        <span id="pos"></span>
+        <span id="pixel">pixel x4</span>
+        <span id="shards">◆ 0/5</span>
+      </div>
+      <div id="stamina"><div id="stamina-fill"></div></div>
+      <div id="hp">♥♥♥♥♥♥</div>
+      <div id="prompt"></div>
+      <div id="hint">WASD — идти · ЛКМ — удар · E — взять · Space — прыжок · Shift — бег</div>
+    </div>
+    <div id="dmg"></div>
+
+    <div id="overlay">
+      <div class="overlay-inner">
+        <div class="rune">ᛟ ✦ ᛟ</div>
+        <h1>DARK FANTASY</h1>
+        <h2>Проклятые руины</h2>
+        <p>
+          Зло здесь победило давно.<br />
+          Деревня — твой дом. Мост — твой путь. Замок — твой конец.<br />
+          Иди на север, к свету алтаря — если осмелишься.
+        </p>
+        <button id="enter">Войти в туман</button>
+        <div class="controls">WASD — движение · Space — прыжок · Shift — бег · [ / ] — пиксель</div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+
+    <div id="end">
+      <div class="overlay-inner">
+        <div class="rune">✦ ✦ ✦</div>
+        <h1>СВЕТ ПРОБИЛСЯ</h1>
+        <h2>портал открыт</h2>
+        <p id="end-stats"></p>
+        <button id="again">Пройти снова</button>
+      </div>
+    </div>
+
+    <div id="death">
+      <div class="overlay-inner">
+        <div class="rune">ᛝ ᛝ ᛝ</div>
+        <h1>ТЬМА ЗАБРАЛА ТЕБЯ</h1>
+        <h2>но осколки остались при тебе</h2>
+        <p>Тени отступят. Встань и иди снова.</p>
+        <button id="respawn">Встать в деревне</button>
+      </div>
+    </div>
+  </body>
+</html>

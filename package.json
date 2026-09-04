@@ -1,0 +1,20 @@
+{
+  "name": "darkfantasy-ruins",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Dark Fantasy 3D browser game — Проклятые Руины (Three.js + Vite + TS)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.3"
+  }
+}

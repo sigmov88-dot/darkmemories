@@ -1,0 +1,252 @@
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { Input } from '../core/input';
+import { CollisionWorld } from '../systems/collision';
+import { getGroundHeight } from '../world/ground';
+import { makePixelFlame } from '../world/pixel';
+
+const EYE = 1.7;
+const RADIUS = 0.42;
+const GRAVITY = 22;
+const JUMP_SPEED = 7.4;
+
+/** FPS-ходьба с прыжком: WASD + Space + PointerLock + факел в руке */
+export class Player {
+  controls!: PointerLockControls;
+  private vel = new THREE.Vector3();
+  private handLight!: THREE.PointLight;
+  private handGroup!: THREE.Group;
+  private handFlame!: THREE.Sprite;
+  private bob = 0;
+  private locked = false;
+  private feetY = 0;
+  private vy = 0;
+  private grounded = true;
+  private wantJump = false;
+  private stamina = 100;
+  private exhausted = false;
+  // бой
+  private hp = 6;
+  private maxHp = 6;
+  private invuln = 0;
+  private attackCd = 0;
+  private swingT = 0;
+  private swingId = 0;
+  private static readonly SWING_LEN = 0.28;
+
+  stamina01(): number {
+    return this.stamina / 100;
+  }
+
+  isExhausted(): boolean {
+    return this.exhausted;
+  }
+
+  hpNow(): number {
+    return this.hp;
+  }
+
+  hpMax(): number {
+    return this.maxHp;
+  }
+
+  /** Урон по игроку. Возвращает true если умер. */
+  damage(n: number): boolean {
+    if (this.invuln > 0) return false;
+    this.hp -= n;
+    this.invuln = 1.2;
+    return this.hp <= 0;
+  }
+
+  heal(n: number): void {
+    this.hp = Math.min(this.maxHp, this.hp + n);
+  }
+
+  respawn(x: number, z: number): void {
+    this.camera.position.set(x, getGroundHeight(x, z) + EYE, z);
+    this.feetY = getGroundHeight(x, z);
+    this.vel.set(0, 0, 0);
+    this.vy = 0;
+    this.grounded = true;
+    this.hp = this.maxHp;
+    this.invuln = 1.5;
+    this.stamina = 100;
+    this.exhausted = false;
+  }
+
+  /** Активен ли удар прямо сейчас (для попадания по врагам) */
+  attackActive(): boolean {
+    return this.swingT > Player.SWING_LEN - 0.15;
+  }
+
+  attackId(): number {
+    return this.swingId;
+  }
+
+  attackDir(out: THREE.Vector3): THREE.Vector3 {
+    return this.camera.getWorldDirection(out);
+  }
+
+  constructor(
+    private camera: THREE.Camera,
+    private dom: HTMLElement,
+    private scene: THREE.Scene,
+    private input: Input,
+    private collision: CollisionWorld
+  ) {}
+
+  init(onLockChange: (locked: boolean) => void): void {
+    this.controls = new PointerLockControls(this.camera, this.dom);
+    this.controls.addEventListener('lock', () => {
+      this.locked = true;
+      onLockChange(true);
+    });
+    this.controls.addEventListener('unlock', () => {
+      this.locked = false;
+      onLockChange(false);
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        this.wantJump = true;
+        e.preventDefault();
+      }
+    });
+    // ЛКМ — удар факелом (только в игре)
+    window.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || !this.locked) return;
+      if (this.attackCd <= 0) {
+        this.attackCd = 0.45;
+        this.swingT = Player.SWING_LEN;
+        this.swingId++;
+      }
+    });
+
+    this.feetY = getGroundHeight(this.camera.position.x, this.camera.position.z);
+
+    this.handLight = new THREE.PointLight(0xff8a3a, 9, 14, 1.7);
+    this.handLight.position.set(0.35, -0.15, -0.4);
+    this.camera.add(this.handLight);
+    this.scene.add(this.camera);
+
+    this.handFlame = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: makePixelFlame(),
+        transparent: true,
+        depthWrite: false,
+        depthTest: false,
+        opacity: 1.0
+      })
+    );
+    // Группа руки — качается при взмахе
+    this.handGroup = new THREE.Group();
+    this.handGroup.position.set(0.35, -0.3, -0.7);
+    this.handFlame.position.set(0, 0.08, 0);
+    this.handFlame.scale.set(0.14, 0.2, 1);
+    this.handGroup.add(this.handFlame);
+
+    const handle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.015, 0.02, 0.5, 6),
+      new THREE.MeshLambertMaterial({ color: 0x2a1a0c })
+    );
+    handle.position.set(0, -0.12, 0);
+    handle.rotation.x = 0.25;
+    this.handGroup.add(handle);
+    this.camera.add(this.handGroup);
+  }
+
+  lock(): void {
+    this.controls.lock();
+  }
+
+  update(dt: number, t: number): void {
+    const n = Math.sin(t * 12.3) * 0.5 + Math.sin(t * 27.7) * 0.3 + Math.sin(t * 47.1) * 0.2;
+    if (this.invuln > 0) this.invuln -= dt;
+    if (this.attackCd > 0) this.attackCd -= dt;
+
+    // взмах: быстрый выпад руки вперед
+    let swingBoost = 0;
+    if (this.swingT > 0) {
+      this.swingT -= dt;
+      const p = 1 - Math.max(this.swingT, 0) / Player.SWING_LEN; // 0→1
+      const curve = Math.sin(p * Math.PI);
+      this.handGroup.rotation.x = -curve * 1.15;
+      this.handGroup.position.z = -0.7 - curve * 0.28;
+      swingBoost = curve * 7;
+    } else {
+      this.handGroup.rotation.x *= 0.8;
+      this.handGroup.position.z += (-0.7 - this.handGroup.position.z) * Math.min(dt * 10, 1);
+    }
+
+    this.handLight.intensity = 9 + n * 1.6 + swingBoost;
+    this.handFlame.scale.set(0.14 * (1 + n * 0.06), 0.2 * (1 - n * 0.05), 1);
+
+    if (!this.locked) {
+      this.wantJump = false;
+      return;
+    }
+
+    // --- Горизонталь + стамина ---
+    const pressingMove = Math.abs(this.input.forward) + Math.abs(this.input.strafe) > 0.1;
+    if (this.input.run && pressingMove && this.grounded && !this.exhausted) {
+      this.stamina -= 20 * dt;
+      if (this.stamina <= 0) {
+        this.stamina = 0;
+        this.exhausted = true;
+      }
+    } else {
+      this.stamina += (pressingMove ? 14 : 24) * dt;
+      if (this.stamina > 100) this.stamina = 100;
+      if (this.exhausted && this.stamina > 25) this.exhausted = false;
+    }
+    const canRun = this.input.run && !this.exhausted && this.stamina > 1;
+    const speed = canRun ? 7.2 : 4.2;
+    // в воздухе управление слабее
+    const grip = this.grounded ? 8 : 2.5;
+    this.vel.x += (this.input.strafe * speed - this.vel.x) * Math.min(dt * grip, 1);
+    this.vel.z += (this.input.forward * speed - this.vel.z) * Math.min(dt * grip, 1);
+
+    this.controls.moveRight(this.vel.x * dt);
+    this.controls.moveForward(this.vel.z * dt);
+
+    const p = this.camera.position;
+    // край мира
+    p.x = Math.max(-46, Math.min(46, p.x));
+    p.z = Math.max(-36, Math.min(42, p.z));
+    // коллизии
+    const fixed = this.collision.resolve(p.x, p.z, RADIUS);
+    p.x = fixed.x;
+    p.z = fixed.z;
+
+    // --- Вертикаль: прыжок + гравитация ---
+    const ground = getGroundHeight(p.x, p.z);
+    if (this.grounded && this.wantJump) {
+      this.vy = JUMP_SPEED;
+      this.grounded = false;
+    }
+    this.wantJump = false;
+
+    if (!this.grounded) {
+      this.vy -= GRAVITY * dt;
+      this.feetY += this.vy * dt;
+      if (this.feetY <= ground) {
+        this.feetY = ground;
+        this.vy = 0;
+        this.grounded = true;
+      }
+    } else {
+      // земля ушла из-под ног (мост/холм) — падать
+      if (this.feetY > ground + 0.01) {
+        this.grounded = false;
+        this.vy = 0;
+      } else {
+        this.feetY = ground;
+      }
+    }
+
+    // покачивание только на земле при движении
+    const moving = Math.abs(this.vel.x) + Math.abs(this.vel.z);
+    if (this.grounded && moving > 0.5) this.bob += dt * (this.input.run ? 11 : 8);
+    const targetY = this.feetY + EYE + (this.grounded ? Math.sin(this.bob) * 0.045 * Math.min(moving / 4, 1) : 0);
+    p.y += (targetY - p.y) * Math.min(dt * 14, 1);
+  }
+}
