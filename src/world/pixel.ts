@@ -210,6 +210,32 @@ export function makePixelFlame(): THREE.CanvasTexture {
   return t;
 }
 
+/** Мягкое вертикальное свечение-спрайт (порталы, маяки). Без жестких краев. */
+export function makeGlowSprite(color: string, w: number, h: number): THREE.Sprite {
+  const c = document.createElement('canvas');
+  c.width = 32;
+  c.height = 64;
+  const ctx = c.getContext('2d')!;
+  const g = ctx.createRadialGradient(16, 34, 2, 16, 34, 30);
+  g.addColorStop(0, color);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 32, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: t, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, fog: false
+    })
+  );
+  s.scale.set(w, h, 1);
+  return s;
+}
+
 /** Руна на алтаре 32x32 */
 export function makePixelRune(): THREE.CanvasTexture {
   const [c, ctx] = cv(32);

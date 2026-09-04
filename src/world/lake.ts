@@ -116,11 +116,11 @@ export function createLake(scene: THREE.Scene, collision: CollisionWorld): LakeR
   const darkMat = new THREE.MeshLambertMaterial({ map: makePixelDarkStone() });
   const iy = getGroundHeight(ISLAND.x, ISLAND.z);
   const wallN = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3.0, 0.9), stoneMat);
-  wallN.position.set(ISLAND.x, iy + 1.5, ISLAND.z - 2.2);
+  wallN.position.set(ISLAND.x, iy + 1.3, ISLAND.z - 2.2);
   wallN.castShadow = wallN.receiveShadow = true;
   scene.add(wallN);
   const wallW = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.2, 4.5), stoneMat);
-  wallW.position.set(ISLAND.x - 2.4, iy + 1.1, ISLAND.z - 0.2);
+  wallW.position.set(ISLAND.x - 2.4, iy + 0.95, ISLAND.z - 0.2);
   wallW.rotation.z = 0.06;
   wallW.castShadow = true;
   scene.add(wallW);
@@ -139,7 +139,7 @@ export function createLake(scene: THREE.Scene, collision: CollisionWorld): LakeR
   collision.addBox(ISLAND.x, ISLAND.z - 0.5, 1.0, 1.0);
 
   // Зеленый маяк острова — видно с берега и тракта
-  const beacon = beaconSprite('rgba(110,255,190,0.85)', 3, 14);
+  const beacon = beaconSprite('rgba(110,255,190,0.85)', 2, 14);
   beacon.position.set(ISLAND.x, iy + 8, ISLAND.z - 0.5);
   scene.add(beacon);
 
@@ -225,10 +225,11 @@ export function createLake(scene: THREE.Scene, collision: CollisionWorld): LakeR
     const body = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.12), birdMat);
     group.add(body);
     const wingGeo = new THREE.PlaneGeometry(0.55, 0.22);
-    const wingL = new THREE.Mesh(wingGeo, new THREE.MeshBasicMaterial({ color: 0x0d0f16, side: THREE.DoubleSide }));
+    const wingMat = new THREE.MeshBasicMaterial({ color: 0x0d0f16, side: THREE.DoubleSide });
+    const wingL = new THREE.Mesh(wingGeo, wingMat);
     wingL.position.x = -0.28;
     group.add(wingL);
-    const wingR = new THREE.Mesh(wingGeo, wingL.material);
+    const wingR = new THREE.Mesh(wingGeo, wingMat);
     wingR.position.x = 0.28;
     group.add(wingR);
     scene.add(group);

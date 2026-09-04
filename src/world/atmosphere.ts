@@ -26,7 +26,7 @@ function glowTex(): THREE.CanvasTexture {
 
 /** Холодная пиксельная луна + плоский свет без полутонов */
 export function setupAtmosphere(scene: THREE.Scene): Atmosphere {
-  const dirLight = new THREE.DirectionalLight(0x9db8e8, 1.6);
+  const dirLight = new THREE.DirectionalLight(0x9db8e8, 1.25);
   dirLight.position.set(-18, 26, -14);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.set(1024, 1024);
@@ -39,9 +39,10 @@ export function setupAtmosphere(scene: THREE.Scene): Atmosphere {
   dirLight.shadow.bias = -0.002;
   scene.add(dirLight);
 
-  // Плоский ambient вместо hemisphere — пиксель-стиль любит плоскости
-  scene.add(new THREE.AmbientLight(0x3a4666, 1.1));
-  const rim = new THREE.DirectionalLight(0x4a6aaa, 0.5);
+  // Плоский ambient вместо hemisphere — пиксель-стиль любит плоскости.
+  // Темно: свет — только луна, факелы и «жемчужины».
+  scene.add(new THREE.AmbientLight(0x2c3854, 0.8));
+  const rim = new THREE.DirectionalLight(0x4a6aaa, 0.4);
   rim.position.set(12, 8, -30);
   scene.add(rim);
 

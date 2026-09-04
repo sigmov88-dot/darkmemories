@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CollisionWorld } from '../systems/collision';
 import { getGroundHeight } from './ground';
-import { makePixelStone, makePixelDarkStone, makePixelGrave, makePixelRune } from './pixel';
+import { makePixelStone, makePixelDarkStone, makePixelGrave, makePixelRune, makeGlowSprite } from './pixel';
 
 export interface Ruins {
   altarPos: THREE.Vector3;
@@ -120,10 +120,11 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
     f.castShadow = true;
     g.add(f);
   }
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 11), darkMat);
-  rail.position.set(-7.2, 0.85, 0.5);
-  rail.rotation.y = 1.12;
-  rail.rotation.z = 0.05;
+  // Перекладина строго вдоль линии столбов (была поперек — «кривой забор»)
+  const railDir = new THREE.Vector2(-5.1, -11.5);
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, railDir.length()), darkMat);
+  rail.position.set(-7.15, 0.8, 0.45);
+  rail.rotation.y = Math.atan2(railDir.x, railDir.y);
   g.add(rail);
 
   // --- Часовня справа: П-образные стены, вход с запада (от тропы) ---
@@ -139,11 +140,18 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
   block(g, 1.2, 0.8, 1.0, 4.2, 0.4, 2.2, 0.7, true);
   block(g, 0.9, 0.6, 0.9, 5.6, 0.3, 3.4, 1.2, false);
 
-  // колодец часовни
-  const well = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.1, 0.9, 10, 1, true), stoneMat);
+  // колодец часовни: закрытое кольцо + темная вода внутри
+  const well = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.1, 0.9, 10), stoneMat);
   well.position.set(6.0, 0.45, -5.5);
   well.castShadow = well.receiveShadow = true;
   g.add(well);
+  const wellWater = new THREE.Mesh(
+    new THREE.CircleGeometry(0.85, 10),
+    new THREE.MeshBasicMaterial({ color: 0x0a1420 })
+  );
+  wellWater.rotation.x = -Math.PI / 2;
+  wellWater.position.set(6.0, 0.72, -5.5);
+  g.add(wellWater);
   block(g, 0.18, 1.8, 0.18, 5.2, 1.2, -5.5, 0, true);
   block(g, 0.18, 1.8, 0.18, 6.8, 1.2, -5.5, 0, true);
   block(g, 2.0, 0.18, 0.4, 6.0, 2.05, -5.5, 0, true, 0.06);
@@ -193,12 +201,11 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
   const portal = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.8), portalMat);
   portal.position.set(0, pgy + 2.4, -21.5);
   g.add(portal);
-  const glowMat = new THREE.MeshBasicMaterial({
-    color: 0x2a4a9a, transparent: true, opacity: 0.06,
-    blending: THREE.AdditiveBlending, depthWrite: false, fog: false
-  });
-  const glow = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 6.0), glowMat);
-  glow.position.set(0, pgy + 2.6, -21.7);
+  // Мягкое свечение без жестких краев (бывший плоский прямоугольник)
+  const glow = makeGlowSprite('rgba(70,110,220,1)', 5, 7);
+  const glowMat = glow.material as THREE.SpriteMaterial;
+  glowMat.opacity = 0.22; // до ритуала — едва тлеет
+  glow.position.set(0, pgy + 2.8, -21.6);
   g.add(glow);
 
   block(g, 1.0, 5.2, 1.0, -1.9, pgy + 2.6, -21.5, 0, true, 0, true);
@@ -225,12 +232,10 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
         glowMat.opacity = 0.5 + Math.sin(t * 5) * 0.1;
         return;
       }
+      // закрыт: пульсирует только руна, портал темен
       const step = Math.floor(t * 4) % 4;
       const k = [1.0, 0.75, 1.0, 0.6][step];
       runeMat.color.setRGB(1.0 * k, 0.54 * k, 0.16 * k);
-      (portal.material as THREE.MeshBasicMaterial).color.setHex(
-        step === 3 ? 0x7aa8f0 : 0x8fb8ff
-      );
     }
   };
 }

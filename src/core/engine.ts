@@ -31,9 +31,9 @@ export class Engine {
     this.canvas.style.imageRendering = 'pixelated';
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0b0e1a);
-    // Разреженный туман: открытый мир, маяки-ориентиры видны издалека
-    this.scene.fog = new THREE.FogExp2(0x0d1224, 0.011);
+    this.scene.background = new THREE.Color(0x070a14);
+    // Гуще, чем в M1, но реже старта: мрак вернулся, маяки все еще видны
+    this.scene.fog = new THREE.FogExp2(0x0a0e1c, 0.014);
 
     this.camera = new THREE.PerspectiveCamera(
       70,

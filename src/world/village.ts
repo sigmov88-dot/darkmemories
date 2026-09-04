@@ -130,10 +130,17 @@ export function createVillage(scene: THREE.Scene, collision: CollisionWorld): vo
   const well = new THREE.Group();
   well.position.set(3.4, getGroundHeight(3.4, 28), 28);
   scene.add(well);
-  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.9, 8, 1, true), stoneMat);
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.9, 8), stoneMat);
   ring.position.y = 0.45;
   ring.castShadow = true;
   well.add(ring);
+  const wellWater = new THREE.Mesh(
+    new THREE.CircleGeometry(0.78, 8),
+    new THREE.MeshBasicMaterial({ color: 0x0a1420 })
+  );
+  wellWater.rotation.x = -Math.PI / 2;
+  wellWater.position.y = 0.72;
+  well.add(wellWater);
   for (const sx of [-0.8, 0.8]) {
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.7, 0.16), darkWood);
     post.position.set(sx, 1.1, 0);

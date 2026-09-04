@@ -47,11 +47,13 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
   const mesh = new THREE.InstancedMesh(trunkGeo, trunkMat, Math.max(spots.length, 1));
   mesh.castShadow = true;
   const dummy = new THREE.Object3D();
+  const scales: number[] = [];
   spots.forEach(([x, z], i) => {
     dummy.position.set(x, getGroundHeight(x, z) - 0.2, z);
     dummy.rotation.y = (i * 1.3) % Math.PI;
     dummy.rotation.z = ((i * 7) % 10) / 10 * 0.2 - 0.1;
     const s = 0.9 + ((i * 11) % 10) / 12;
+    scales.push(s);
     dummy.scale.set(s, s, s);
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);
@@ -61,15 +63,16 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
   mesh.instanceMatrix.needsUpdate = true;
   scene.add(mesh);
 
-  // Сучья
+  // Сучья — на верхней трети СВОЕГО ствола (были на фиксированной высоте)
   const branchGeo = new THREE.BoxGeometry(2.4, 0.16, 0.16);
   const branch = new THREE.InstancedMesh(branchGeo, trunkMat, Math.max(spots.length, 1));
   const m4 = new THREE.Matrix4();
   spots.forEach((_, i) => {
     mesh.getMatrixAt(i, m4);
-    dummy.position.set(m4.elements[12], m4.elements[13] + 4.4, m4.elements[14]);
+    const s = scales[i];
+    dummy.position.set(m4.elements[12], m4.elements[13] + 4.6 * s, m4.elements[14]);
     dummy.rotation.set(0, (i * 2.2) % Math.PI, 0.5);
-    dummy.scale.setScalar(0.9);
+    dummy.scale.set(s, s, s);
     dummy.updateMatrix();
     branch.setMatrixAt(i, dummy.matrix);
   });

@@ -15,7 +15,7 @@ import { makePixelStone, makePixelDarkStone } from './pixel';
 export function createCastle(scene: THREE.Scene, collision: CollisionWorld): void {
   const stoneMat = new THREE.MeshLambertMaterial({ map: makePixelStone() });
   const darkMat = new THREE.MeshLambertMaterial({ map: makePixelDarkStone() });
-  const bannerMat = new THREE.MeshLambertMaterial({ color: 0x6e1a1a });
+  const bannerMat = new THREE.MeshLambertMaterial({ color: 0x6e1a1a, side: THREE.DoubleSide });
   const doorMat = new THREE.MeshBasicMaterial({ color: 0x080604 });
 
   const g = new THREE.Group();
