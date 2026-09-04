@@ -10,6 +10,8 @@ import { createGround } from './world/ground';
 import { createVillage } from './world/village';
 import { createRuins } from './world/ruins';
 import { createRiver } from './world/river';
+import { createLake } from './world/lake';
+import { createCrags } from './world/crags';
 import { createCastle } from './world/castle';
 import { createTorches } from './world/torches';
 import { createDeadForest } from './world/forest';
@@ -39,6 +41,8 @@ createGround(engine.scene);
 createVillage(engine.scene, collision);
 const ruins = createRuins(engine.scene, collision);
 const river = createRiver(engine.scene, collision);
+const lake = createLake(engine.scene, collision);
+createCrags(engine.scene, collision);
 createCastle(engine.scene, collision);
 const torches = createTorches(engine.scene, collision);
 createDeadForest(engine.scene, collision);
@@ -112,6 +116,7 @@ function animate(): void {
 
   ruins.update(t);
   river.update(t, dt);
+  lake.update(t, dt);
   torches.update(t);
   fog.update(t, dt);
   player.update(dt, t);

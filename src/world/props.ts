@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getGroundHeight, riverZAt } from './ground';
+import { getGroundHeight, riverZAt, lakeNorm, ISLAND, CAUSEWAY, cragPathInfo, VIEWPOINT } from './ground';
 import { makePixelGrass } from './pixel';
 
 /** Детали: трава, камыш у реки, светогрибы. Все — пиксель-билборды. */
@@ -12,6 +12,10 @@ export function createProps(scene: THREE.Scene): void {
     if (Math.abs(x) < 11 && z > 21 && z < 36) return false; // деревня (дома)
     if (Math.abs(x) < 8 && z > -26 && z < -12) return false; // двор замка
     if (Math.abs(x) < 9 && z > -7 && z < 7) return false; // кладбище/часовня интерьеры
+    if (lakeNorm(x, z) > 0.5 && Math.hypot(x - ISLAND.x, z - ISLAND.z) > 5.5) return false; // озеро
+    if (Math.abs(z - CAUSEWAY.z) < 2.2 && x < CAUSEWAY.x1 && x > CAUSEWAY.x0) return false; // дамба
+    if (cragPathInfo(x, z).d < 1.4) return false; // серпантин
+    if (Math.hypot(x - VIEWPOINT.x, z - VIEWPOINT.z) < 6) return false; // смотровая
     return true;
   }
 
@@ -21,9 +25,9 @@ export function createProps(scene: THREE.Scene): void {
   });
 
   const spots: Array<[number, number]> = [];
-  for (let i = 0; i < 400 && spots.length < 230; i++) {
-    const x = ((i * 73) % 60) - 30;
-    const z = 32 - ((i * 57) % 62);
+  for (let i = 0; i < 520 && spots.length < 260; i++) {
+    const x = ((i * 73) % 106) - 62;
+    const z = 36 - ((i * 57) % 78);
     if (clearForGrass(x, z)) spots.push([x, z]);
   }
   const inst = new THREE.InstancedMesh(bladeGeo, bladeMat, Math.max(spots.length * 2, 1));

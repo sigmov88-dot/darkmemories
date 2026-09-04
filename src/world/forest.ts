@@ -1,31 +1,39 @@
 import * as THREE from 'three';
 import { CollisionWorld } from '../systems/collision';
-import { getGroundHeight, riverZAt } from './ground';
+import {
+  getGroundHeight, riverZAt, lakeNorm,
+  ISLAND, CAUSEWAY, cragPathInfo, VIEWPOINT
+} from './ground';
 import { makePixelBark } from './pixel';
 
-/** Мертвый лес — стена вокруг мира + рощи. Не лезет на карту. */
+/** Мертвый лес — стена по краю мира + рощи. Не лезет на тропы, воду и зоны. */
 export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld): void {
   const trunkGeo = new THREE.CylinderGeometry(0.14, 0.45, 7, 6);
   trunkGeo.translate(0, 3.5, 0);
   const trunkMat = new THREE.MeshLambertMaterial({ map: makePixelBark() });
 
   function clearOfMap(x: number, z: number): boolean {
-    if (Math.abs(x) < 4 && z > -26 && z < 34) return false; // коридор тропы
+    if (Math.abs(x) < 4 && z > -26 && z < 34) return false; // главная тропа
     if (Math.abs(x) < 15 && z > 11 && z < 37) return false; // деревня+поля
     if (Math.abs(x) < 11 && z > -31 && z < -11) return false; // замок
     if (Math.abs(x) < 13 && z > -8 && z < 6.5) return false; // кладбище+часовня
     if (Math.abs(z - riverZAt(x)) < 5) return false; // река и берега
+    if (lakeNorm(x, z) > 0.3) return false; // озеро
+    if (Math.hypot(x - ISLAND.x, z - ISLAND.z) < 9) return false; // остров
+    if (Math.abs(z - CAUSEWAY.z) < 3.5 && x < -22 && x > -44) return false; // дамба
+    if (cragPathInfo(x, z).d < 4) return false; // серпантин
+    if (Math.hypot(x - VIEWPOINT.x, z - VIEWPOINT.z) < 7) return false; // смотровая
     return true;
   }
 
   const spots: Array<[number, number]> = [];
-  // внешнее кольцо
-  const COUNT = 120;
+  // внешнее кольцо по новым границам
+  const COUNT = 150;
   for (let i = 0; i < COUNT; i++) {
     const ang = (i / COUNT) * Math.PI * 2 + (i % 7) * 0.09;
-    const r = 32 + ((i * 29) % 16);
+    const r = 36 + ((i * 29) % 26);
     const x = Math.cos(ang) * r;
-    const z = Math.sin(ang) * r - 2;
+    const z = Math.sin(ang) * r * 0.9 - 2;
     if (clearOfMap(x, z)) spots.push([x, z]);
   }
   // рощи по бокам средней зоны
@@ -47,7 +55,7 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
     dummy.scale.set(s, s, s);
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);
-    if (Math.abs(x) < 30) collision.addCircle(x, z, 0.5); // толстые стволы Near-path — твердые
+    if (Math.abs(x) < 34) collision.addCircle(x, z, 0.5);
   });
   mesh.count = spots.length;
   mesh.instanceMatrix.needsUpdate = true;

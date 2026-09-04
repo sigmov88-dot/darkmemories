@@ -214,9 +214,9 @@ export class Player {
     this.controls.moveForward(this.vel.z * dt);
 
     const p = this.camera.position;
-    // край мира
-    p.x = Math.max(-46, Math.min(46, p.x));
-    p.z = Math.max(-36, Math.min(42, p.z));
+    // край мира (открытый регион)
+    p.x = Math.max(-70, Math.min(70, p.x));
+    p.z = Math.max(-58, Math.min(58, p.z));
     // коллизии (без аллокаций)
     this.collision.resolve(p.x, p.z, RADIUS, this.resolveOut);
     p.x = this.resolveOut.x;

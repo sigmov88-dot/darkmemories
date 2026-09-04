@@ -32,7 +32,8 @@ export class Engine {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0b0e1a);
-    this.scene.fog = new THREE.FogExp2(0x0d1224, 0.02);
+    // Разреженный туман: открытый мир, маяки-ориентиры видны издалека
+    this.scene.fog = new THREE.FogExp2(0x0d1224, 0.011);
 
     this.camera = new THREE.PerspectiveCamera(
       70,

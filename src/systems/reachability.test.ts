@@ -108,6 +108,9 @@ describe('reachability', () => {
       expect(nearestVisitedDist(PORTAL_POS.x, PORTAL_POS.z)).toBeLessThan(
         PORTAL_POS.triggerR - 0.1
       );
+      // M1: новые земли тоже доступны — середина дамбы и смотровая
+      expect(nearestVisitedDist(-33, -4)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(38, -8)).toBeLessThan(1.5);
     },
     60000
   );
