@@ -25,9 +25,11 @@ export function createProps(scene: THREE.Scene): void {
   });
 
   const spots: Array<[number, number]> = [];
-  for (let i = 0; i < 520 && spots.length < 260; i++) {
-    const x = ((i * 73) % 106) - 62;
-    const z = 36 - ((i * 57) % 78);
+  for (let i = 0; i < 620 && spots.length < 300; i++) {
+    const x = ((i * 73) % 112) - 64;
+    const z = 58 - ((i * 57) % 118);
+    if (x > -4 && x < 22 && z > 36 && z < 54) continue; // ферма (грядки)
+    if (Math.hypot(x - 48, z + 12) < 8) continue; // башня
     if (clearForGrass(x, z)) spots.push([x, z]);
   }
   const inst = new THREE.InstancedMesh(bladeGeo, bladeMat, Math.max(spots.length * 2, 1));

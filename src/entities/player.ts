@@ -286,8 +286,18 @@ export class Player {
     p.x = this.resolveOut.x;
     p.z = this.resolveOut.z;
 
-    // --- Вертикаль: прыжок + гравитация ---
-    const ground = getGroundHeight(p.x, p.z);
+    // --- Вертикаль: прыжок + гравитация + ступени ---
+    // На низкое (≤0.55 над ногами) забираемся шагом или прыжком
+    const terrain = getGroundHeight(p.x, p.z);
+    const stepTop = this.collision.surfaceTop(p.x, p.z);
+    let ground = terrain;
+    if (
+      stepTop > -Infinity &&
+      this.feetY >= stepTop - 0.6 &&
+      this.feetY <= stepTop + 0.35
+    ) {
+      ground = Math.max(terrain, stepTop);
+    }
     if (this.grounded && this.wantJump) {
       this.vy = JUMP_SPEED;
       this.grounded = false;

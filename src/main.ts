@@ -17,6 +17,7 @@ import { createTorches } from './world/torches';
 import { createDeadForest } from './world/forest';
 import { createGroundFog } from './world/fog';
 import { createProps } from './world/props';
+import { createSatellites } from './world/satellites';
 import { createQuest } from './systems/quest';
 import { createEnemies, PlayerAttack } from './entities/enemies';
 import { Player } from './entities/player';
@@ -48,6 +49,7 @@ createCastle(engine.scene, collision);
 const torches = createTorches(engine.scene, collision);
 createDeadForest(engine.scene, collision);
 createProps(engine.scene);
+const satellites = createSatellites(engine.scene, collision);
 const fog = createGroundFog(engine.scene);
 
 // Прогрев шейдеров ПОСЛЕ создания мира, иначе греется пустая сцена
@@ -120,6 +122,7 @@ function animate(): void {
   river.update(t, dt);
   lake.update(t, dt);
   crags.update(t);
+  satellites.update(t, dt);
   torches.update(t);
   fog.update(t, dt);
   player.update(dt, t);

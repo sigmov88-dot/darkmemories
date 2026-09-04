@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CollisionWorld } from '../systems/collision';
 import { getGroundHeight } from './ground';
 import { makePixelWood, makePixelThatch, makePixelPlaster, makePixelDarkStone } from './pixel';
+import { pixelBox, pixelCylinder } from './pixel';
 
 /**
  * Деревня Тленка (z +20..+34). Планировка вокруг площади (0,26):
@@ -35,13 +36,13 @@ export function createVillage(scene: THREE.Scene, collision: CollisionWorld): vo
     scene.add(g);
 
     // стены
-    const walls = new THREE.Mesh(new THREE.BoxGeometry(w, hgt, dpt), plasterMat);
+    const walls = new THREE.Mesh(pixelBox(w, hgt, dpt), plasterMat);
     walls.position.y = hgt / 2;
     walls.castShadow = walls.receiveShadow = true;
     g.add(walls);
     // угловые балки
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-      const beam = new THREE.Mesh(new THREE.BoxGeometry(0.28, hgt, 0.28), darkWood);
+      const beam = new THREE.Mesh(pixelBox(0.28, hgt, 0.28), darkWood);
       beam.position.set((sx * w) / 2, hgt / 2, (sz * dpt) / 2);
       beam.castShadow = true;
       g.add(beam);
@@ -53,7 +54,7 @@ export function createVillage(scene: THREE.Scene, collision: CollisionWorld): vo
     roof.castShadow = true;
     g.add(roof);
     // труба
-    const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.2, 0.5), stoneMat);
+    const chimney = new THREE.Mesh(pixelBox(0.5, 1.2, 0.5), stoneMat);
     chimney.position.set(w * 0.25, hgt + hgt * 0.5, 0);
     chimney.castShadow = true;
     g.add(chimney);
@@ -106,16 +107,16 @@ export function createVillage(scene: THREE.Scene, collision: CollisionWorld): vo
     collision.addBox(cx, cz, w + 0.3, dpt + 0.3);
   }
 
-  house(-7.5, 26, 4.2, 3.6, 2.4, 'E'); // A запад
-  house(7.5, 25, 4.2, 3.6, 2.4, 'W'); // B восток
-  house(-5.5, 32.5, 3.8, 3.4, 2.2, 'S'); // C север-запад
-  house(5.5, 32.5, 3.8, 3.4, 2.2, 'S'); // D север-восток
+  house(-7.5, 26, 4.2, 3.6, 2.4, 'E'); // A запад — дверь к площади
+  house(7.5, 25, 4.2, 3.6, 2.4, 'W'); // B восток — дверь к площади
+  house(-5.5, 32.5, 3.8, 3.4, 2.2, 'N'); // C юг-запад — дверь к площади
+  house(5.5, 32.5, 3.8, 3.4, 2.2, 'N'); // D юг-восток — дверь к площади
 
   // Амбар у западной околицы
   const barn = new THREE.Group();
   barn.position.set(-10.5, getGroundHeight(-10.5, 31), 31);
   scene.add(barn);
-  const barnBody = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.6, 4.4), woodMat);
+  const barnBody = new THREE.Mesh(pixelBox(3.4, 2.6, 4.4), woodMat);
   barnBody.position.y = 1.3;
   barnBody.castShadow = barnBody.receiveShadow = true;
   barn.add(barnBody);
@@ -130,7 +131,7 @@ export function createVillage(scene: THREE.Scene, collision: CollisionWorld): vo
   const well = new THREE.Group();
   well.position.set(3.4, getGroundHeight(3.4, 28), 28);
   scene.add(well);
-  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.9, 8), stoneMat);
+  const ring = new THREE.Mesh(pixelCylinder(0.9, 1.0, 0.9, 8), stoneMat);
   ring.position.y = 0.45;
   ring.castShadow = true;
   well.add(ring);

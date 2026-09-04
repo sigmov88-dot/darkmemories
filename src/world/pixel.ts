@@ -4,12 +4,51 @@ import * as THREE from 'three';
 
 export function toPixel(tex: THREE.CanvasTexture, repeatX = 1, repeatY = 1): THREE.CanvasTexture {
   tex.magFilter = THREE.NearestFilter;
-  tex.minFilter = THREE.NearestFilter;
-  tex.generateMipmaps = false;
+  // Мипмапы с Nearest-семплированием: близко — четкие пиксели,
+  // вдали — без мерцания и «рванины»
+  tex.minFilter = THREE.NearestMipmapLinearFilter;
+  tex.generateMipmaps = true;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(repeatX, repeatY);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
+}
+
+/** Плотность текстуры: 1 тайл на TILE метров — одинаково на всех стенах */
+export const PIXEL_TILE = 1.25;
+
+/**
+ * Box с UV под реальный размер: кирпичи везде одного масштаба,
+ * а не тянутся на всю стену. Материал можно шарить.
+ */
+export function pixelBox(w: number, h: number, d: number, tile = PIXEL_TILE): THREE.BoxGeometry {
+  const g = new THREE.BoxGeometry(w, h, d);
+  const uv = g.attributes.uv as THREE.BufferAttribute;
+  // порядок граней: +x, -x, +y, -y, +z, -z; по 4 вершины
+  const dims: Array<[number, number]> = [
+    [d, h], [d, h], [w, d], [w, d], [w, h], [w, h]
+  ];
+  for (let f = 0; f < 6; f++) {
+    const [su, sv] = dims[f];
+    for (let v = 0; v < 4; v++) {
+      const i = f * 4 + v;
+      uv.setXY(i, (uv.getX(i) * su) / tile, (uv.getY(i) * sv) / tile);
+    }
+  }
+  return g;
+}
+
+/** Цилиндр с UV под реальный размер (башни, колонны, колодцы) */
+export function pixelCylinder(
+  rt: number, rb: number, h: number, seg = 8, tile = PIXEL_TILE, open = false
+): THREE.CylinderGeometry {
+  const g = new THREE.CylinderGeometry(rt, rb, h, seg, 1, open);
+  const uv = g.attributes.uv as THREE.BufferAttribute;
+  const circ = Math.PI * (rt + rb);
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i, (uv.getX(i) * circ) / tile, (uv.getY(i) * h) / tile);
+  }
+  return g;
 }
 
 function cv(s: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
@@ -51,7 +90,7 @@ export function makePixelGround(): THREE.CanvasTexture {
     ctx.fillStyle = '#0d0f16';
     ctx.fillRect(Math.floor(rnd() * 64), Math.floor(rnd() * 64), 2, 1);
   }
-  return toPixel(new THREE.CanvasTexture(c), 30, 30);
+  return toPixel(new THREE.CanvasTexture(c), 96, 88);
 }
 
 /** Камень руин: кирпичи 32px */
@@ -134,7 +173,7 @@ export function makePixelBark(): THREE.CanvasTexture {
     ctx.fillStyle = pick(['#2e2418', '#1a140e', '#3a2d1e']);
     ctx.fillRect(Math.floor(rnd() * 16), Math.floor(rnd() * 16), 1, 2);
   }
-  return toPixel(new THREE.CanvasTexture(c), 1, 2);
+  return toPixel(new THREE.CanvasTexture(c), 1, 1);
 }
 
 /** Трава-пучок 16x16 со сквозным фоном */

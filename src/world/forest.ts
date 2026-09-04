@@ -4,11 +4,11 @@ import {
   getGroundHeight, riverZAt, lakeNorm,
   ISLAND, CAUSEWAY, cragPathInfo, VIEWPOINT
 } from './ground';
-import { makePixelBark } from './pixel';
+import { makePixelBark, pixelCylinder, pixelBox } from './pixel';
 
 /** Мертвый лес — стена по краю мира + рощи. Не лезет на тропы, воду и зоны. */
 export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld): void {
-  const trunkGeo = new THREE.CylinderGeometry(0.14, 0.45, 7, 6);
+  const trunkGeo = pixelCylinder(0.14, 0.45, 7, 6);
   trunkGeo.translate(0, 3.5, 0);
   const trunkMat = new THREE.MeshLambertMaterial({ map: makePixelBark() });
 
@@ -23,6 +23,9 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
     if (Math.abs(z - CAUSEWAY.z) < 3.5 && x < -22 && x > -44) return false; // дамба
     if (cragPathInfo(x, z).d < 4) return false; // серпантин
     if (Math.hypot(x - VIEWPOINT.x, z - VIEWPOINT.z) < 7) return false; // смотровая
+    if (x > -4 && x < 22 && z > 36 && z < 54) return false; // ферма
+    if (x > -13 && x < 13 && z > -52 && z < -32) return false; // осадный лагерь
+    if (Math.hypot(x - 48, z + 12) < 9) return false; // сторожевая башня
     return true;
   }
 
@@ -64,7 +67,7 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
   scene.add(mesh);
 
   // Сучья — на верхней трети СВОЕГО ствола (были на фиксированной высоте)
-  const branchGeo = new THREE.BoxGeometry(2.4, 0.16, 0.16);
+  const branchGeo = pixelBox(2.4, 0.16, 0.16);
   const branch = new THREE.InstancedMesh(branchGeo, trunkMat, Math.max(spots.length, 1));
   const m4 = new THREE.Matrix4();
   spots.forEach((_, i) => {

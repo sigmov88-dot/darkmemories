@@ -113,6 +113,10 @@ describe('reachability', () => {
       expect(nearestVisitedDist(38, -8)).toBeLessThan(1.5);
       // M2: остров (пьедестал под ключ) достижим вброд от дамбы
       expect(nearestVisitedDist(-44.5, -3)).toBeLessThan(1.0);
+      // Спутники: ферма, осадный лагерь, сторожевая башня
+      expect(nearestVisitedDist(10, 38)).toBeLessThan(1.5);
+      expect(nearestVisitedDist(0, -36)).toBeLessThan(1.5);
+      expect(nearestVisitedDist(44.5, -12)).toBeLessThan(1.5);
     },
     60000
   );

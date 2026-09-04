@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CollisionWorld } from '../systems/collision';
 import { getGroundHeight } from './ground';
 import { makePixelStone, makePixelDarkStone, makePixelGrave, makePixelRune, makeGlowSprite } from './pixel';
+import { pixelBox, pixelCylinder } from './pixel';
 
 export interface Ruins {
   altarPos: THREE.Vector3;
@@ -19,7 +20,7 @@ function block(
   x: number, y: number, z: number,
   ry = 0, dark = false, tilt = 0, solid = false
 ): THREE.Mesh {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), dark ? darkMat : stoneMat);
+  const m = new THREE.Mesh(pixelBox(w, h, d), dark ? darkMat : stoneMat);
   m.position.set(x, y, z);
   m.rotation.y = ry;
   m.rotation.z = tilt;
@@ -32,13 +33,13 @@ function block(
 
 function column(g: THREE.Group, x: number, z: number, full: boolean): void {
   const gy = getGroundHeight(x, z);
-  const base = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 1.2), darkMat);
+  const base = new THREE.Mesh(pixelBox(1.2, 0.5, 1.2), darkMat);
   base.position.set(x, gy + 0.25, z);
   base.castShadow = base.receiveShadow = true;
   g.add(base);
   const n = full ? 3 : 2;
   for (let i = 0; i < n; i++) {
-    const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 1.3, 8), stoneMat);
+    const seg = new THREE.Mesh(pixelCylinder(0.42, 0.48, 1.3, 8), stoneMat);
     seg.position.set(x, gy + 0.5 + 0.65 + i * 1.3, z);
     if (!full && i === n - 1) seg.rotation.z = 0.14;
     seg.castShadow = seg.receiveShadow = true;
@@ -141,7 +142,7 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
   block(g, 0.9, 0.6, 0.9, 5.6, 0.3, 3.4, 1.2, false);
 
   // колодец часовни: закрытое кольцо + темная вода внутри
-  const well = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.1, 0.9, 10), stoneMat);
+  const well = new THREE.Mesh(pixelCylinder(1.0, 1.1, 0.9, 10), stoneMat);
   well.position.set(6.0, 0.45, -5.5);
   well.castShadow = well.receiveShadow = true;
   g.add(well);
@@ -165,18 +166,19 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
   for (const [rx, rz, s] of rubbleSpots) {
     const rgy = getGroundHeight(rx, rz);
     block(g, s, s * 0.6, s, rx, rgy + s * 0.25, rz, rx * 1.7, (rx + rz) % 2 === 0);
-    collision.addCircle(rx, rz, s * 0.55);
+    // обломки низкие — на них запрыгивают, а не бьются лбом
+    collision.addStep(rx, rz, s, s, rgy + s * 0.55);
   }
 
   // --- Алтарь во дворе замка ---
   const altarPos = new THREE.Vector3(0, 0, -18);
   const agy = getGroundHeight(0, -18);
-  const dais = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.6, 0.5, 12), darkMat);
+  const dais = new THREE.Mesh(pixelCylinder(3.2, 3.6, 0.5, 12), darkMat);
   dais.position.set(0, agy + 0.25, -18);
   dais.receiveShadow = dais.castShadow = true;
   g.add(dais);
 
-  const altar = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.1, 0.9), stoneMat);
+  const altar = new THREE.Mesh(pixelBox(1.6, 1.1, 0.9), stoneMat);
   altar.position.set(0, agy + 0.5 + 0.55, -18);
   altar.castShadow = altar.receiveShadow = true;
   g.add(altar);
@@ -191,9 +193,9 @@ export function createRuins(scene: THREE.Scene, col: CollisionWorld): Ruins {
   rune.rotation.x = -Math.PI / 2;
   rune.position.set(0, agy + 0.52, -18);
   g.add(rune);
-  // Коллайдер только вокруг самого алтаря (1.1), а не всего круга:
-  // иначе запретная зона перекрывает проход от моста к осколку и порталу.
-  collision.addCircle(0, -18, 1.1);
+  // Коллайдер только вокруг самого алтаря; даис — ступень, на него встают
+  collision.addStep(0, -18, 6.4, 6.4, agy + 0.5);
+  collision.addBox(0, -18, 1.9, 1.2);
 
   // --- Портал-врата: до ритуала видна только темная арка ---
   const pgy = getGroundHeight(0, -21.5);

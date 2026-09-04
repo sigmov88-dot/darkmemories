@@ -25,9 +25,19 @@ export interface ResolveOut {
   z: number;
 }
 
+/** Низкое препятствие, на которое можно забраться (обломки, даис, ступени) */
+export interface StepVolume {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+  top: number;
+}
+
 export class CollisionWorld {
   boxes: BoxCollider[] = [];
   circles: CircleCollider[] = [];
+  steps: StepVolume[] = [];
 
   /** Стена/дом как прямоугольник (центр + размер + опциональный поворот только 0/90) */
   addBox(cx: number, cz: number, w: number, d: number): BoxCollider {
@@ -47,6 +57,28 @@ export class CollisionWorld {
     const c: CircleCollider = { kind: 'circle', x, z, r };
     this.circles.push(c);
     return c;
+  }
+
+  /** Ступень: верхняя поверхность, на которую встают (без бокового блока) */
+  addStep(cx: number, cz: number, w: number, d: number, top: number): void {
+    this.steps.push({
+      minX: cx - w / 2,
+      maxX: cx + w / 2,
+      minZ: cz - d / 2,
+      maxZ: cz + d / 2,
+      top
+    });
+  }
+
+  /** Верх ступеней под точкой, иначе -Infinity */
+  surfaceTop(x: number, z: number): number {
+    let top = -Infinity;
+    for (const s of this.steps) {
+      if (x >= s.minX && x <= s.maxX && z >= s.minZ && z <= s.maxZ && s.top > top) {
+        top = s.top;
+      }
+    }
+    return top;
   }
 
   /**
