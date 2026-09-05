@@ -57,6 +57,16 @@ export function createCastle(scene: THREE.Scene, collision: CollisionWorld): voi
     collision.addCircle(cx, cz, 1.85);
   }
 
+  // Предмостный форт на южном берегу: ворота по оси моста, коридор |x|<2.5
+  tower(-3.5, -6, 6);
+  tower(3.5, -6, 6);
+  const foreLintel = new THREE.Mesh(pixelBox(8.6, 0.9, 1.2), darkMat);
+  foreLintel.position.set(0, getGroundHeight(0, -6) + 5.6, -6);
+  foreLintel.castShadow = true;
+  g.add(foreLintel);
+  wall(-5.4, -6, 3.2, 4, 1.0, true);
+  wall(5.4, -6, 3.2, 4, 1.0, true);
+
   // Южная стена с воротами (проем |x|<1.8)
   wall(-4.1, -13, 4.6, 3.4, 1.1, true);
   wall(4.1, -13, 4.6, 3.4, 1.1, true);
@@ -120,6 +130,17 @@ export function createCastle(scene: THREE.Scene, collision: CollisionWorld): voi
   tower(-12, -26, 8);
   tower(12, -26, 8);
 
+  // Третье кольцо: наружный вал. Вход только с юга через предмостный форт
+  // и по верху — патрульный обход между стенами свободен.
+  wall(-20, -24, 1.2, 4.5, 20);
+  wall(20, -24, 1.2, 4.5, 20);
+  wall(-16.2, -33, 8.4, 4, 1.2);
+  wall(16.2, -33, 8.4, 4, 1.2);
+  tower(-20, -14, 9);
+  tower(20, -14, 9);
+  tower(-20, -34, 9);
+  tower(20, -34, 9);
+
   // Донжон: полый, с залом, троном и крышей. Вход с юга (|x|<1.1).
   const keepZ = -27.5;
   const keepGy = getGroundHeight(0, keepZ);
@@ -130,8 +151,9 @@ export function createCastle(scene: THREE.Scene, collision: CollisionWorld): voi
   floor.receiveShadow = true;
   g.add(floor);
   collision.addStep(0, keepZ, 8.6, 4.6, floorY);
-  // стены: юг из двух сегментов (проем двери), остальные цельные
-  const wallH = 5.5;
+  // стены: юг из двух сегментов (проем двери), остальные цельные.
+  // Донжон высокий (7м) — доминанта центра карты, видно отовсюду.
+  const wallH = 7;
   const wallY = floorY - 0.2 + wallH / 2;
   const keepWalls: Array<[number, number, number, number]> = [
     [-2.8, -25, 3.4, 1.0], [2.8, -25, 3.4, 1.0], // юг с проемом
@@ -169,6 +191,16 @@ export function createCastle(scene: THREE.Scene, collision: CollisionWorld): voi
     const m = new THREE.Mesh(pixelBox(pw, 0.9, pd), stoneMat);
     m.position.set(px, parY, pz);
     g.add(m);
+  }
+  // угловые башенки на крыше — силуэт донжона
+  for (const [tx, tz] of [[-4.2, -25.3], [4.2, -25.3], [-4.2, -29.7], [4.2, -29.7]] as Array<[number, number]>) {
+    const tur = new THREE.Mesh(pixelCylinder(0.9, 1.0, 2.2, 8), stoneMat);
+    tur.position.set(tx, parY + 1.1, tz);
+    tur.castShadow = true;
+    g.add(tur);
+    const turCap = new THREE.Mesh(new THREE.ConeGeometry(1.2, 1.0, 8), darkMat);
+    turCap.position.set(tx, parY + 2.7, tz);
+    g.add(turCap);
   }
   // интерьер: колонны, трон, ковер, жаровни (свет только emissive)
   for (const [px, pz] of [[-2.2, -26.6], [2.2, -26.6], [-2.2, -28.4], [2.2, -28.4]] as Array<[number, number]>) {

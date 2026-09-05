@@ -18,9 +18,15 @@ export function riverZAt(x: number): number {
 
 // --- Границы открытого мира (один источник для клампа игрока) ---
 export const WORLD = {
-  minX: -105, maxX: 105, minZ: -92, maxZ: 92,
-  wallR: 100, wallGain: 0.45
+  minX: -150, maxX: 150, minZ: -130, maxZ: 150,
+  wallR: 140, wallGain: 0.45
 } as const;
+
+// Спавн — южный край, цветочный луг
+export const SPAWN = { x: 0, z: 132 } as const;
+
+// Броды через реку: мелко и без коллайдеров (вторая и третья переправы)
+export const FORDS: ReadonlyArray<number> = [-85, 30];
 
 // --- Северные пики и западный хребет (граница мира, за контентом) ---
 export const PEAKS: Array<readonly [number, number, number, number]> = [
@@ -98,12 +104,18 @@ export function getGroundHeight(x: number, z: number): number {
 
   // Русло реки. На востоке сходит на нет к |x|=44 — дальше сухая земля,
   // а не каньон без воды: обход конца реки легален, брод — нет.
+  // В бродах мельче: перейти можно вброд.
   const rz = riverZAt(x);
   const dRiver = Math.abs(z - rz);
   if (dRiver < 3.4) {
     const k = Math.cos((dRiver / 3.4) * (Math.PI / 2));
     const taper = 1 - smooth01((Math.abs(x) - 36) / 8);
-    h -= 1.35 * k * k * taper;
+    let depthK = 1;
+    for (const fx of FORDS) {
+      const fd = Math.abs(x - fx);
+      if (fd < 4) depthK = Math.min(depthK, 0.25 + 0.75 * (fd / 4));
+    }
+    h -= 1.35 * k * k * taper * depthK;
   }
 
   // Озерная котловина (не действует на островной купол)
@@ -153,7 +165,7 @@ export function getGroundHeight(x: number, z: number): number {
 }
 
 export function createGround(scene: THREE.Scene): void {
-  const geo = new THREE.PlaneGeometry(320, 300, 228, 214);
+  const geo = new THREE.PlaneGeometry(440, 400, 314, 286);
   geo.rotateX(-Math.PI / 2);
   const p = geo.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < p.count; i++) {
@@ -166,11 +178,11 @@ export function createGround(scene: THREE.Scene): void {
   mesh.receiveShadow = true;
   scene.add(mesh);
 
-  // --- Главная тропа: деревня → врата → мост → замок ---
+  // --- Главная тропа: луг спавна → деревня → врата → мост → замок ---
   const stoneGeo = new THREE.BoxGeometry(0.55, 0.14, 0.55);
   const stoneMat = new THREE.MeshLambertMaterial({ map: makePixelCobble() });
   const positions: Array<[number, number]> = [];
-  for (let z = 30; z >= -22; z -= 0.72) {
+  for (let z = 148; z >= -22; z -= 0.72) {
     const rz = riverZAt(0);
     if (z < rz + 3.2 && z > rz - 3.2) continue;
     const wobble = Math.sin(z * 0.5) * 0.18;

@@ -26,6 +26,11 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
     if (x > -4 && x < 22 && z > 36 && z < 54) return false; // ферма
     if (x > -13 && x < 13 && z > -52 && z < -32) return false; // осадный лагерь
     if (Math.hypot(x - 48, z + 12) < 9) return false; // сторожевая башня
+    if (Math.hypot(x + 70, z - 40) < 12) return false; // западный хутор
+    if (Math.hypot(x - 75, z - 55) < 12) return false; // южный хутор
+    if (Math.hypot(x - 26, z - 18) < 12) return false; // Пепелище
+    if (Math.hypot(x + 80, z + 30) < 14) return false; // форт
+    if (Math.hypot(x, z - 132) < 22) return false; // спавн-луг
     return true;
   }
 
@@ -46,6 +51,22 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
     const z = 8 - ((i * 23) % 22);
     if (clearOfMap(x, z)) spots.push([x, z]);
   }
+  // три бора на воле: западный, восточный, северный
+  const massifs: Array<readonly [number, number, number, number]> = [
+    // cx, cz, радиус, число
+    [-100, 5, 30, 70],
+    [95, -35, 28, 60],
+    [-35, -70, 26, 55]
+  ];
+  for (const [mcx, mcz, mr, mn] of massifs) {
+    for (let i = 0; i < mn; i++) {
+      const a = i * 2.39996 + mcx;
+      const r = mr * Math.sqrt(((i * 0.61803) % 1 + 1) % 1);
+      const x = mcx + Math.cos(a) * r;
+      const z = mcz + Math.sin(a) * r;
+      if (clearOfMap(x, z)) spots.push([x, z]);
+    }
+  }
 
   const mesh = new THREE.InstancedMesh(trunkGeo, trunkMat, Math.max(spots.length, 1));
   mesh.castShadow = true;
@@ -60,7 +81,8 @@ export function createDeadForest(scene: THREE.Scene, collision: CollisionWorld):
     dummy.scale.set(s, s, s);
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);
-    collision.addCircle(x, z, 0.5); // все стволы твердые, включая дальние
+    // Твердые только деревья ядра карты — дальние чисто декор (и дешевле для resolve)
+    if (Math.abs(x) < 70 && z > -60 && z < 70) collision.addCircle(x, z, 0.5);
   });
   mesh.count = spots.length;
   mesh.instanceMatrix.needsUpdate = true;

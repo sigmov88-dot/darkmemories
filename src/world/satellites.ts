@@ -303,6 +303,98 @@ export function createSatellites(scene: THREE.Scene, collision: CollisionWorld):
   ];
   for (const [px, pz, pr] of peakBlock) collision.addCircle(px, pz, pr);
 
+  // ---------- Заброшенные хутора: тот же почерк, что Пепелище ----------
+  function hamlet(cx: number, cz: number, seed: number): void {
+    const shells: Array<[number, number, number, number]> = [
+      [-2.5, -2.5, 3.6, 3.2], [3, 0.5, 4.0, 3.4], [-1, 5, 3.2, 3.0]
+    ];
+    shells.forEach(([ox, oz, w, d], si) => {
+      const hx = cx + ox;
+      const hz = cz + oz;
+      const hy = getGroundHeight(hx, hz);
+      const hs = [1.4, 0.9, 1.7, 1.1];
+      const walls: Array<[number, number, number, number]> = [
+        [0, -d / 2, w, 0.5], [0, d / 2, w, 0.5], [-w / 2, 0, 0.5, d], [w / 2, 0, 0.5, d]
+      ];
+      walls.forEach(([wx, wz, ww, wd], i) => {
+        const h = hs[(i + seed + si) % 4];
+        const m = new THREE.Mesh(pixelBox(ww, h, wd), i % 2 === 0 ? plasterMat : charMat);
+        m.position.set(hx + wx, hy + h / 2, hz + wz);
+        m.castShadow = m.receiveShadow = true;
+        scene.add(m);
+        collision.addBox(hx + wx, hz + wz, ww + 0.15, wd + 0.15);
+      });
+      const ashDisc = new THREE.Mesh(new THREE.CircleGeometry(Math.min(w, d) * 0.32, 10), ashMat);
+      ashDisc.rotation.x = -Math.PI / 2;
+      ashDisc.position.set(hx, hy + 0.06, hz);
+      scene.add(ashDisc);
+    });
+    // заваленный колодец
+    const wx = cx + 1;
+    const wz = cz + 2;
+    const wy = getGroundHeight(wx, wz);
+    const well = new THREE.Mesh(pixelCylinder(0.9, 1.0, 0.7, 8), stoneMat);
+    well.position.set(wx, wy + 0.35, wz);
+    well.castShadow = true;
+    scene.add(well);
+    collision.addCircle(wx, wz, 1.1);
+  }
+  // материалы Пепелища (объявлены выше) переиспользуются здесь
+  hamlet(-70, 40, 5); // западный хутор у бора
+  hamlet(75, 55, 8); // южный хутор в поле
+
+  // ---------- Западный форт: каре из ломаных стен с южным входом ----------
+  const fortX = -80;
+  const fortZ = -30;
+  const fortS = 9; // полуразмер
+  const stubH = [2.2, 1.4, 2.6, 1.8];
+  const fortWalls: Array<[number, number, number, number, number]> = [
+    // x, z, w, d, высота (южная сторона открыта)
+    [fortX - fortS, fortZ, 1.0, fortS * 2, stubH[0]], // запад
+    [fortX + fortS, fortZ, 1.0, fortS * 2, stubH[1]], // восток
+    [fortX, fortZ - fortS, fortS * 2, 1.0, stubH[2]] // север
+  ];
+  for (const [wx, wz, ww, wd, wh] of fortWalls) {
+    const m = new THREE.Mesh(pixelBox(ww, wh, wd), stoneMat);
+    m.position.set(wx, getGroundHeight(wx, wz) + wh / 2, wz);
+    m.castShadow = m.receiveShadow = true;
+    scene.add(m);
+    collision.addBox(wx, wz, ww + 0.15, wd + 0.15);
+  }
+  // угловая башня-обрубок
+  const ftX = fortX - fortS;
+  const ftZ = fortZ - fortS;
+  const ft = new THREE.Mesh(pixelCylinder(1.6, 1.9, 4.5, 8), stoneMat);
+  ft.position.set(ftX, getGroundHeight(ftX, ftZ) + 2.25, ftZ);
+  ft.castShadow = true;
+  scene.add(ft);
+  collision.addCircle(ftX, ftZ, 2.1);
+  // упавшие ворота поперек входа
+  const gateLeaf = new THREE.Mesh(pixelBox(2.6, 0.25, 1.1), woodMat);
+  gateLeaf.position.set(fortX + 1, getGroundHeight(fortX + 1, fortZ + fortS) + 0.15, fortZ + fortS);
+  gateLeaf.rotation.y = 0.5;
+  gateLeaf.castShadow = true;
+  scene.add(gateLeaf);
+
+  // ---------- Межевой камень на спавн-лугу ----------
+  const wayX = 0;
+  const wayZ = 128;
+  const wayY = getGroundHeight(wayX, wayZ);
+  const wayStone = new THREE.Mesh(pixelBox(0.9, 1.7, 0.4), stoneMat);
+  wayStone.position.set(wayX - 1.2, wayY + 0.85, wayZ);
+  wayStone.rotation.z = 0.06;
+  wayStone.castShadow = true;
+  scene.add(wayStone);
+  const signPole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.2, 6), darkWood);
+  signPole.position.set(wayX + 1.2, wayY + 1.1, wayZ);
+  scene.add(signPole);
+  const signBoard = new THREE.Mesh(pixelBox(1.3, 0.35, 0.08), woodMat);
+  signBoard.position.set(wayX + 1.2, wayY + 1.85, wayZ);
+  signBoard.rotation.y = -0.25;
+  scene.add(signBoard);
+  collision.addCircle(wayX - 1.2, wayZ, 0.6);
+  collision.addCircle(wayX + 1.2, wayZ, 0.3);
+
   return {
     update: (_t: number, dt: number) => {
       hub.rotation.z += dt * 0.5; // крылья мельницы

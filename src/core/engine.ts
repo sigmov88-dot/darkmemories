@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SPAWN } from '../world/ground';
 
 /**
  * Engine — renderer + scene + camera.
@@ -47,7 +48,7 @@ export class Engine {
       0.1,
       300
     );
-    this.camera.position.set(0, 1.7, 26); // площадь деревни, лицом на север
+    this.camera.position.set(SPAWN.x, 1.7, SPAWN.z); // край карты, цветочный луг
 
     window.addEventListener('resize', () => this.onResize());
   }

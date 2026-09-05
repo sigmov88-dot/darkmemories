@@ -38,10 +38,10 @@ describe('reachability', () => {
       createSatellites(scene, collision);
 
       const STEP = 0.5;
-      const MIN_X = -64;
-      const MAX_X = 46;
-      const MIN_Z = -36;
-      const MAX_Z = 42;
+      const MIN_X = -100;
+      const MAX_X = 100;
+      const MIN_Z = -70;
+      const MAX_Z = 160;
       const W = Math.round((MAX_X - MIN_X) / STEP) + 1;
       const H = Math.round((MAX_Z - MIN_Z) / STEP) + 1;
       const out = { x: 0, z: 0 };
@@ -55,7 +55,7 @@ describe('reachability', () => {
 
       const seen = new Uint8Array(W * H);
       const idx = (ix: number, iz: number): number => iz * W + ix;
-      const start: [number, number] = [0, 26];
+      const start: [number, number] = [0, 132]; // спавн-луг на краю карты
       const six = Math.round((start[0] - MIN_X) / STEP);
       const siz = Math.round((start[1] - MIN_Z) / STEP);
       expect(walkable(start[0], start[1])).toBe(true);
@@ -130,14 +130,25 @@ describe('reachability', () => {
       // Пепелище и цвингер (патрульный проход между стенами)
       expect(nearestVisitedDist(26, 19)).toBeLessThan(1.5);
       expect(nearestVisitedDist(9, -20)).toBeLessThan(1.5);
+      // Воля: спавн, броды, южные ворота, хутора, форт
+      expect(nearestVisitedDist(0, 132)).toBeLessThan(0.6);
+      expect(nearestVisitedDist(-85, -12)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(30, -10)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(0, -6)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(-70, 40)).toBeLessThan(1.5);
+      expect(nearestVisitedDist(75, 55)).toBeLessThan(1.5);
+      expect(nearestVisitedDist(-80, -30)).toBeLessThan(1.5);
       // Мост — единственный путь через реку в окне карты
       expect(nearestVisitedDist(0, -11)).toBeLessThan(0.8);
-      // Негативы: глубь озера, стремнина и конец русла — вне доступа
+      // Воля: броды и южные ворота замка проходимы
+      expect(nearestVisitedDist(-85, -12)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(30, -10)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(0, -6)).toBeLessThan(1.0);
+      // Негативы: глубь озера и стремнина вне бродов — вне доступа
       // (центр озера — склон острова, поэтому проба в настоящей глуби на западе)
       expect(nearestVisitedDist(-58, -2)).toBeGreaterThan(5);
-      expect(nearestVisitedDist(30, -11.5)).toBeGreaterThan(1.2);
       expect(nearestVisitedDist(-20, -11)).toBeGreaterThan(1.2);
     },
-    60000
+    180000
   );
 });

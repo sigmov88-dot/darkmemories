@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CollisionWorld } from '../systems/collision';
-import { getGroundHeight, riverZAt } from './ground';
+import { getGroundHeight, riverZAt, FORDS } from './ground';
 import { makePixelWater, makePixelSand, makePixelWood } from './pixel';
 
 export interface RiverRig {
@@ -21,8 +21,8 @@ export function createRiver(scene: THREE.Scene, collision: CollisionWorld): Rive
 
   // Лента воды из сегментов 2м — повторяет изгиб русла.
   // Запад — до края карты (река уходит за мир), восток — до конца русла (x=42).
-  const SEG = 56;
-  const X0 = -70;
+  const SEG = 96;
+  const X0 = -150;
   const X1 = 42;
   const waterGeo = new THREE.PlaneGeometry((X1 - X0) / SEG, 7.6, 1, 4);
   waterGeo.rotateX(-Math.PI / 2);
@@ -103,10 +103,17 @@ export function createRiver(scene: THREE.Scene, collision: CollisionWorld): Rive
     }
   }
 
-  // --- Коллизии реки: цепочка блоков вдоль всего русла, разрыв только под мост ---
-  // Запад — до края карты, восток — до конца воды (x=44). Обход конца легален.
-  for (let x = -70; x <= 44; x += 2) {
-    if (Math.abs(x) < 2.4) continue; // проем моста
+  // --- Коллизии реки: цепочка блоков вдоль всего русла ---
+  // Разрывы: мост (x=0) и броды. Обход конца на востоке легален.
+  const isGap = (x: number): boolean => {
+    if (Math.abs(x) < 2.4) return true; // проем моста
+    for (const fx of FORDS) {
+      if (Math.abs(x - fx) < 2.5) return true; // броды
+    }
+    return false;
+  };
+  for (let x = -150; x <= 44; x += 2) {
+    if (isGap(x)) continue;
     const rz = riverZAt(x);
     collision.addBox(x, rz + 2.6, 2.2, 1.2); // южный край
     collision.addBox(x, rz - 2.6, 2.2, 1.2); // северный край
@@ -120,6 +127,22 @@ export function createRiver(scene: THREE.Scene, collision: CollisionWorld): Rive
   // Перила моста — коридор 2.6м
   collision.addBox(-1.75, -11, 0.3, 7.6);
   collision.addBox(1.75, -11, 0.3, 7.6);
+
+  // Маркеры бродов: столбики-пирамидки по сторонам (без коллизий — низкие)
+  const cairnMat = new THREE.MeshLambertMaterial({ color: 0x4a4d5c });
+  for (const fx of FORDS) {
+    for (const side of [-3.5, 3.5]) {
+      for (const bank of [-1, 1]) {
+        const cx = fx + side;
+        const cz = riverZAt(fx) + bank * 3.4;
+        const gy = getGroundHeight(cx, cz);
+        const cairn = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 0.9, 7), cairnMat);
+        cairn.position.set(cx, gy + 0.45, cz);
+        cairn.castShadow = true;
+        scene.add(cairn);
+      }
+    }
+  }
 
   return {
     update: (_t: number, dt: number) => {

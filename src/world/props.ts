@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { getGroundHeight, riverZAt, lakeNorm, ISLAND, CAUSEWAY, cragPathInfo, VIEWPOINT } from './ground';
-import { makePixelGrass } from './pixel';
+import { makePixelGrass, makePixelFlower } from './pixel';
+
+/** Луга с цветами: центр, радиус */
+const MEADOWS: Array<readonly [number, number, number]> = [
+  [0, 132, 30], // спавн-луг
+  [-30, 60, 25], // западные поля
+  [40, 40, 25] // восточные поля
+];
 
 /** Детали: трава, камыш у реки, светогрибы. Все — пиксель-билборды. */
 export function createProps(scene: THREE.Scene): void {
@@ -93,4 +100,39 @@ export function createProps(scene: THREE.Scene): void {
   }
   mush.instanceMatrix.needsUpdate = true;
   scene.add(mush);
+
+  // Цветы лугов: 4 цвета, крест-билборды. Тропы и дома не зарастают.
+  const blossoms = ['#d84a4a', '#e8e4d0', '#5a7ad8', '#e8c84a'];
+  const flowerGeo = new THREE.PlaneGeometry(0.45, 0.55);
+  for (const blossom of blossoms) {
+    const fmat = new THREE.MeshLambertMaterial({
+      map: makePixelFlower(blossom), alphaTest: 0.5, side: THREE.DoubleSide
+    });
+    const fspots: Array<[number, number]> = [];
+    for (let i = 0; i < 300 && fspots.length < 90; i++) {
+      const m = MEADOWS[(i + blossoms.indexOf(blossom)) % MEADOWS.length];
+      const a = (i * 2.39996) % (Math.PI * 2);
+      const r = 4 + ((i * 37) % Math.floor(m[2] * 10)) / 10;
+      const x = m[0] + Math.cos(a) * r;
+      const z = m[1] + Math.sin(a) * r;
+      if (Math.abs(x) < 2.2 && z > 28 && z < 150) continue; // главная тропа
+      if (getGroundHeight(x, z) < -0.15) continue; // не в воде
+      fspots.push([x, z]);
+    }
+    const finst = new THREE.InstancedMesh(flowerGeo, fmat, Math.max(fspots.length * 2, 1));
+    let fi = 0;
+    fspots.forEach(([x, z], i) => {
+      for (let k = 0; k < 2; k++) {
+        dummy.position.set(x, getGroundHeight(x, z) + 0.26, z);
+        dummy.rotation.set(0, (i % 4) * 0.78 + (k * Math.PI) / 2, 0);
+        const s = 0.8 + ((i + k) % 4) / 5;
+        dummy.scale.set(s, s, s);
+        dummy.updateMatrix();
+        finst.setMatrixAt(fi++, dummy.matrix);
+      }
+    });
+    finst.count = fi;
+    finst.instanceMatrix.needsUpdate = true;
+    scene.add(finst);
+  }
 }

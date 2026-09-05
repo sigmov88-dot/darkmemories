@@ -90,7 +90,7 @@ export function makePixelGround(): THREE.CanvasTexture {
     ctx.fillStyle = '#0d0f16';
     ctx.fillRect(Math.floor(rnd() * 64), Math.floor(rnd() * 64), 2, 1);
   }
-  return toPixel(new THREE.CanvasTexture(c), 128, 120);
+  return toPixel(new THREE.CanvasTexture(c), 176, 160);
 }
 
 /** Камень руин: кирпичи 32px */
@@ -189,6 +189,27 @@ export function makePixelGrass(): THREE.CanvasTexture {
     ctx.fillStyle = '#1c2a1a';
     ctx.fillRect(x, 16 - h, 1, 1);
   }
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/** Цветок 16x16: стебель + головка заданного цвета */
+export function makePixelFlower(blossom: string): THREE.CanvasTexture {
+  const [c, ctx] = cv(16);
+  ctx.clearRect(0, 0, 16, 16);
+  ctx.fillStyle = '#2e4429';
+  ctx.fillRect(7, 8, 2, 8);
+  ctx.fillRect(5, 11, 2, 1);
+  ctx.fillRect(9, 13, 2, 1);
+  ctx.fillStyle = blossom;
+  ctx.fillRect(6, 4, 4, 4);
+  ctx.fillRect(7, 3, 2, 6);
+  ctx.fillStyle = '#ffd94a';
+  ctx.fillRect(7, 5, 2, 2);
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
   t.minFilter = THREE.NearestFilter;
