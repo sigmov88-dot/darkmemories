@@ -135,6 +135,8 @@ describe('reachability', () => {
       expect(nearestVisitedDist(-8, -18)).toBeLessThan(1.0);
       expect(nearestVisitedDist(8, -18)).toBeLessThan(1.0);
       expect(nearestVisitedDist(-2.5, -16)).toBeLessThan(1.0);
+      // Заводь водопада
+      expect(nearestVisitedDist(36, 8)).toBeLessThan(1.5);
       // Воля: спавн, броды, южные ворота, хутора, форт
       expect(nearestVisitedDist(0, 132)).toBeLessThan(0.6);
       expect(nearestVisitedDist(-85, -12)).toBeLessThan(1.0);

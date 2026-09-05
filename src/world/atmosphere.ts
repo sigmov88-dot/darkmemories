@@ -9,12 +9,12 @@ function glowTex(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 32;
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#d7e6ff';
+  ctx.fillStyle = '#f4f8ff';
   ctx.fillRect(13, 13, 6, 6);
-  ctx.fillStyle = '#8fa8d8';
+  ctx.fillStyle = '#c8d8f0';
   ctx.fillRect(11, 11, 10, 10);
   ctx.clearRect(13, 13, 6, 6);
-  ctx.fillStyle = '#d7e6ff';
+  ctx.fillStyle = '#f4f8ff';
   ctx.fillRect(13, 13, 6, 6);
   const tex = new THREE.CanvasTexture(c);
   tex.magFilter = THREE.NearestFilter;
@@ -71,7 +71,7 @@ export function setupAtmosphere(scene: THREE.Scene): Atmosphere {
     new THREE.MeshBasicMaterial({ map: glowTex(), transparent: true, fog: false })
   );
   moon.position.set(-30, 32, -110);
-  moon.scale.set(2.2, 2.2, 1);
+  moon.scale.set(2.6, 2.6, 1);
   scene.add(moon);
 
   return { dirLight, update: (_t: number) => { void _t; } };

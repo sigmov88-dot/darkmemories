@@ -18,6 +18,7 @@ import { createDeadForest } from './world/forest';
 import { createGroundFog } from './world/fog';
 import { createProps } from './world/props';
 import { createSatellites } from './world/satellites';
+import { createWaterfall } from './world/waterfall';
 import { createQuest } from './systems/quest';
 import { createEnemies, PlayerAttack } from './entities/enemies';
 import { Player } from './entities/player';
@@ -50,6 +51,7 @@ const torches = createTorches(engine.scene, collision);
 createDeadForest(engine.scene, collision);
 createProps(engine.scene);
 const satellites = createSatellites(engine.scene, collision);
+const waterfall = createWaterfall(engine.scene);
 const fog = createGroundFog(engine.scene);
 
 // Прогрев шейдеров ПОСЛЕ создания мира, иначе греется пустая сцена
@@ -108,6 +110,33 @@ syncBody();
 enterBtn.addEventListener('click', () => player.lock());
 resumeBtn.addEventListener('click', () => player.lock());
 document.getElementById('glreload')?.addEventListener('click', () => window.location.reload());
+
+// --- Dev Panel: переключение без перезагрузки ---
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Backquote') {
+    document.body.classList.toggle('dev');
+  }
+});
+const devFly = document.getElementById('dev-fly') as HTMLInputElement | null;
+const devNoclip = document.getElementById('dev-noclip') as HTMLInputElement | null;
+const devSpeed = document.getElementById('dev-speed') as HTMLInputElement | null;
+const devSpeedV = document.getElementById('dev-speed-v');
+const devGod = document.getElementById('dev-god') as HTMLInputElement | null;
+devFly?.addEventListener('change', () => {
+  player.dev.fly = !!devFly?.checked;
+});
+devNoclip?.addEventListener('change', () => {
+  player.dev.noclip = !!devNoclip?.checked;
+});
+devSpeed?.addEventListener('input', () => {
+  const v = Math.max(1, Math.min(3, Number(devSpeed?.value ?? 1)));
+  player.dev.speedMul = v;
+  if (devSpeedV) devSpeedV.textContent = `x${v}`;
+});
+devGod?.addEventListener('change', () => {
+  player.dev.god = !!devGod?.checked;
+  if (player.dev.god) player.heal(999);
+});
 
 const fps = new FpsMeter();
 const clock = new THREE.Clock();
@@ -169,6 +198,7 @@ function animate(): void {
     lake.update(t, dt);
     crags.update(t);
     satellites.update(t, dt);
+    waterfall.update(t, dt);
     torches.update(t);
     fog.update(t, dt, engine.camera.position.x, engine.camera.position.z);
   }

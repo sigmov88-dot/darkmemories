@@ -22,9 +22,17 @@
       <div id="hp">♥♥♥♥♥♥</div>
       <div id="weapon-row"><span id="weapon">[2 ФАКЕЛ]</span></div>
       <div id="prompt"></div>
-      <div id="hint">WASD — идти · ЛКМ — удар · 1/2 — меч/факел · E — взять · Space — прыжок</div>
+      <div id="hint">WASD — идти · ЛКМ — удар · 1/2 — меч/факел · E — взять · Space — прыжок · Ctrl — присесть · ` — dev</div>
     </div>
     <div id="dmg"></div>
+
+    <div id="devpanel">
+      <div class="dev-title">DEV PANEL [`]</div>
+      <label><input type="checkbox" id="dev-fly"> Fly — полет (Space вверх, C вниз)</label>
+      <label><input type="checkbox" id="dev-noclip"> Noclip — сквозь стены</label>
+      <label>Speedhack <input type="range" id="dev-speed" min="1" max="3" step="1" value="1"><span id="dev-speed-v">x1</span></label>
+      <label><input type="checkbox" id="dev-god"> Godmode — бессмертие</label>
+    </div>
     <div id="nogl">
       <div class="overlay-inner">
         <div class="rune">✕ ✕ ✕</div>

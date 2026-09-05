@@ -7,9 +7,14 @@ import { makePixelFlame } from '../world/pixel';
 import { WEAPONS, WeaponId, SWING_LEN, SWING_HIT_WINDOW } from './weapons';
 
 const EYE = 1.7;
+const EYE_CROUCH = 1.05;
 const RADIUS = 0.42;
 const GRAVITY = 22;
 const JUMP_SPEED = 7.4;
+const WALK_SPEED = 4.2;
+const RUN_SPEED = 7.2;
+const CROUCH_SPEED = 2.2;
+const FLY_SPEED = 8;
 
 /** FPS-ходьба: WASD + Space + PointerLock, в руках факел или меч (1/2) */
 export class Player {
@@ -37,6 +42,9 @@ export class Player {
   private swingT = 0;
   private swingId = 0;
   private resolveOut: ResolveOut = { x: 0, z: 0 };
+  private eyeH = EYE;
+  /** Dev-режимы из панели (` — показать). Меняются снаружи без перезагрузки. */
+  readonly dev = { fly: false, noclip: false, speedMul: 1, god: false };
 
   currentWeapon(): WeaponId {
     return this.weapon;
@@ -62,8 +70,12 @@ export class Player {
     return this.maxHp;
   }
 
-  /** Урон по игроку: 'ignored' — неуязвимость, 'hit' — ранен, 'dead' — убит. */
+  /** Урон по игроку: 'ignored' — неуязвимость/годмод, 'hit' — ранен, 'dead' — убит. */
   damage(n: number): 'ignored' | 'hit' | 'dead' {
+    if (this.dev.god) {
+      this.hp = this.maxHp;
+      return 'ignored';
+    }
     if (this.invuln > 0) return 'ignored';
     this.hp -= n;
     this.invuln = 1.2;
@@ -84,6 +96,7 @@ export class Player {
     this.invuln = 1.5;
     this.stamina = 100;
     this.exhausted = false;
+    this.eyeH = EYE;
     // сброс всего ввода/анимаций, чтобы не стрелял старый замах
     this.attackCd = 0;
     this.swingT = 0;
@@ -266,11 +279,16 @@ export class Player {
       iz /= ilen;
     }
     const pressingMove = ilen > 0.1;
-    // бег только по земле: в воздухе — скорость шага, стамина заморожена
-    const canRun = this.grounded && this.input.run && !this.exhausted && this.stamina > 1;
-    const speed = canRun ? 7.2 : 4.2;
+    // приседание: Ctrl (удерживать), только на земле и не в полете
+    const crouching = (this.input.isDown('ControlLeft') || this.input.isDown('ControlRight')) && !this.dev.fly && this.grounded;
+    const eyeTarget = crouching ? EYE_CROUCH : EYE;
+    this.eyeH += (eyeTarget - this.eyeH) * Math.min(dt * 10, 1);
+    // бег только по земле и не присев: в воздухе — скорость шага, стамина заморожена
+    const canRun = this.grounded && !crouching && this.input.run && !this.exhausted && this.stamina > 1;
+    const baseSpeed = this.dev.fly ? FLY_SPEED : crouching ? CROUCH_SPEED : canRun ? RUN_SPEED : WALK_SPEED;
+    const speed = baseSpeed * this.dev.speedMul;
     // в воздухе управление слабее
-    const grip = this.grounded ? 8 : 2.5;
+    const grip = this.grounded || this.dev.fly ? 8 : 2.5;
     this.vel.x += (ix * speed - this.vel.x) * Math.min(dt * grip, 1);
     this.vel.z += (iz * speed - this.vel.z) * Math.min(dt * grip, 1);
 
@@ -281,10 +299,12 @@ export class Player {
     // край мира (открытый регион, константы из ground.ts)
     p.x = Math.max(WORLD.minX, Math.min(WORLD.maxX, p.x));
     p.z = Math.max(WORLD.minZ, Math.min(WORLD.maxZ, p.z));
-    // коллизии (без аллокаций)
-    this.collision.resolve(p.x, p.z, RADIUS, this.resolveOut);
-    p.x = this.resolveOut.x;
-    p.z = this.resolveOut.z;
+    if (!this.dev.noclip) {
+      // коллизии (без аллокаций)
+      this.collision.resolve(p.x, p.z, RADIUS, this.resolveOut);
+      p.x = this.resolveOut.x;
+      p.z = this.resolveOut.z;
+    }
 
     // --- Вертикаль: прыжок + гравитация + ступени ---
     // На низкое (≤0.55 над ногами) забираемся шагом или прыжком
@@ -304,7 +324,17 @@ export class Player {
     }
     this.wantJump = false;
 
-    if (!this.grounded) {
+    if (this.dev.fly) {
+      // полет: Space вверх, C вниз, земля только ловит приземление
+      const up = (this.input.isDown('Space') ? 1 : 0) - (this.input.isDown('KeyC') ? 1 : 0);
+      this.feetY += up * FLY_SPEED * this.dev.speedMul * dt;
+      if (this.feetY <= ground) {
+        this.feetY = ground;
+        this.grounded = true;
+      } else if (up !== 0) {
+        this.grounded = false;
+      }
+    } else if (!this.grounded) {
       this.vy -= GRAVITY * dt;
       this.feetY += this.vy * dt;
       if (this.feetY <= ground) {
@@ -339,10 +369,10 @@ export class Player {
       }
     }
 
-    // покачивание только на земле при движении
+    // покачивание только на земле при движении (присев — ниже и тише)
     const moving = Math.abs(this.vel.x) + Math.abs(this.vel.z);
     if (this.grounded && moving > 0.5) this.bob += dt * (this.input.run ? 11 : 8);
-    const targetY = this.feetY + EYE + (this.grounded ? Math.sin(this.bob) * 0.045 * Math.min(moving / 4, 1) : 0);
+    const targetY = this.feetY + this.eyeH + (this.grounded ? Math.sin(this.bob) * 0.045 * Math.min(moving / 4, 1) : 0);
     p.y += (targetY - p.y) * Math.min(dt * 14, 1);
   }
 }

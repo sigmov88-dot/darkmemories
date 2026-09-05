@@ -37,6 +37,14 @@ export const PEAKS: Array<readonly [number, number, number, number]> = [
   [-75, -60, 10, 14]
 ];
 
+// --- Обрыв с водопадом: бугор восточнее серпантина + заводь + ручей к реке ---
+export const FALLS = { x: 40.5, z: 8, topY: 5.2 } as const;
+const BLUFF = { x: 46, z: 8, h: 6.5, r: 11 };
+export const POOL = { x: 36, z: 8, r: 3.2, depth: 0.5 };
+const STREAM: Array<readonly [number, number]> = [
+  [36, 8], [30, 2], [25, -4], [21, -8]
+];
+
 // --- Черное озеро ---
 export const LAKE = { x: -50, z: -2, rx: 24, rz: 17, depth: 2.4, waterY: -0.7 };
 export const ISLAND = { x: -46, z: -4, r: 7 };
@@ -135,6 +143,41 @@ export function getGroundHeight(x: number, z: number): number {
   const rx = ridgeXAt(z);
   if (x > rx - 2) {
     h += 7 * smooth01((x - (rx - 2)) / 7);
+  }
+  // Обрыв водопада: бугор поверх всего восточного
+  {
+    const bd = Math.hypot(x - BLUFF.x, z - BLUFF.z);
+    if (bd < BLUFF.r * 2) {
+      const k = bd / BLUFF.r;
+      h += BLUFF.h * Math.exp(-k * k);
+    }
+  }
+  // Заводь у подножия водопада
+  {
+    const dp = Math.hypot(x - POOL.x, z - POOL.z);
+    if (dp < POOL.r + 1.5) {
+      const target = -POOL.depth;
+      h = target + (h - target) * smooth01((dp - POOL.r + 0.7) / 1.5);
+    }
+  }
+  // Ручей от заводи к реке
+  {
+    let sd = Infinity;
+    for (let i = 0; i < STREAM.length - 1; i++) {
+      const [ax, az] = STREAM[i];
+      const [bx, bz] = STREAM[i + 1];
+      const dx = bx - ax;
+      const dz = bz - az;
+      const len2 = dx * dx + dz * dz;
+      let tt = len2 > 0 ? ((x - ax) * dx + (z - az) * dz) / len2 : 0;
+      tt = Math.max(0, Math.min(1, tt));
+      const dd = Math.hypot(x - (ax + dx * tt), z - (az + dz * tt));
+      if (dd < sd) sd = dd;
+    }
+    if (sd < 2.6) {
+      const target = -0.45;
+      h = target + (h - target) * smooth01((sd - 1.1) / 1.5);
+    }
   }
   // Серпантин врезан в склон
   const cp = cragPathInfo(x, z);
