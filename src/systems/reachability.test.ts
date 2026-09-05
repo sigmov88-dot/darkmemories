@@ -130,6 +130,11 @@ describe('reachability', () => {
       // Пепелище и цвингер (патрульный проход между стенами)
       expect(nearestVisitedDist(26, 19)).toBeLessThan(1.5);
       expect(nearestVisitedDist(9, -20)).toBeLessThan(1.5);
+      // Интерьеры замка: зал донжона, кузница, конюшня, тренировочная
+      expect(nearestVisitedDist(0, -28)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(-8, -18)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(8, -18)).toBeLessThan(1.0);
+      expect(nearestVisitedDist(-2.5, -16)).toBeLessThan(1.0);
       // Воля: спавн, броды, южные ворота, хутора, форт
       expect(nearestVisitedDist(0, 132)).toBeLessThan(0.6);
       expect(nearestVisitedDist(-85, -12)).toBeLessThan(1.0);

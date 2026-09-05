@@ -115,8 +115,8 @@ export function createRiver(scene: THREE.Scene, collision: CollisionWorld): Rive
   for (let x = -150; x <= 44; x += 2) {
     if (isGap(x)) continue;
     const rz = riverZAt(x);
-    collision.addBox(x, rz + 2.6, 2.2, 1.2); // южный край
-    collision.addBox(x, rz - 2.6, 2.2, 1.2); // северный край
+    collision.addBox(x, rz + 3.4, 2.2, 1.2); // южный край
+    collision.addBox(x, rz - 3.4, 2.2, 1.2); // северный край
   }
   // Сузить проем до ширины моста, чтобы нельзя было обойти по мелководью
   for (const sx of [-2.2, 2.2]) {
